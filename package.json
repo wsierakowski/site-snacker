@@ -1,0 +1,25 @@
+{
+  "name": "site-snacker",
+  "version": "0.1.0",
+  "description": "The script snacks on websites and spits out tasty Markdown",
+  "main": "src/index.ts",
+  "type": "module",
+  "scripts": {
+    "start": "bun run src/index.ts",
+    "dev": "bun --watch run src/index.ts",
+    "build": "bun build src/index.ts",
+    "test": "bun test"
+  },
+  "keywords": [
+    "markdown",
+    "scraper",
+    "html",
+    "typescript"
+  ],
+  "author": "Wojciech Sierakowski",
+  "license": "MIT",
+  "devDependencies": {
+    "bun-types": "latest",
+    "typescript": "^5.0.0"
+  }
+} 
