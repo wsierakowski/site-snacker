@@ -26,8 +26,9 @@ bun install
 
 ## Usage
 
+### Basic Commands
 ```bash
-# Run the script
+# Run the main script
 bun start
 
 # Run in development mode with hot reload
@@ -36,8 +37,35 @@ bun dev
 # Build the project
 bun build
 
-# Fetch a URL directly
+# Run all tests
+bun test
+```
+
+### Fetching URLs
+```bash
+# Fetch a URL directly (automatically handles Cloudflare protection)
 bun run fetch https://example.com
+
+# Fetch a URL with explicit Puppeteer mode for Cloudflare-protected sites
+bun run fetch:puppeteer https://example.com
+
+# Fetch with custom options
+bun run fetch https://example.com --puppeteer --wait=20000 --timeout=60000 --no-cache
+```
+
+### Running Tests
+```bash
+# Run fetcher integration tests
+bun run test:fetcher
+
+# Run fetcher tests with custom URL
+bun run test:fetcher:custom
+
+# Run processor integration tests
+bun run test:processor
+
+# Test OpenAI API integration
+bun run test:openai
 ```
 
 ## Project Modules
@@ -49,29 +77,50 @@ Site Snacker is organized into several modules, each with a specific responsibil
 **Description**: Downloads HTML content from websites and caches it locally.
 
 **How it works**:
-- Uses Axios to fetch HTML content from URLs
+- Uses Axios for basic HTML fetching
+- Uses Puppeteer for Cloudflare-protected sites
 - Converts URLs to file paths for caching
 - Stores downloaded content in a `tmp/[domain]/[path]` structure
 - Implements caching to avoid re-downloading the same content
+- Automatically detects and handles Cloudflare protection
 
 **Contract**:
 ```typescript
-async function fetchHtml(url: string, useCache: boolean = true): Promise<string>
+// Regular fetch with Cloudflare header support
+async function fetchHtml(
+  url: string, 
+  useCache: boolean = true,
+  options: {
+    timeout?: number;
+    useCloudflareHeaders?: boolean;
+  } = {}
+): Promise<string>
+
+// Puppeteer-based fetch for Cloudflare-protected sites
+async function fetchWithPuppeteer(
+  url: string,
+  options: {
+    useCache?: boolean;
+    waitTime?: number;
+    timeout?: number;
+    waitForSelector?: string;
+  } = {}
+): Promise<string>
 ```
-- **Input**: URL to fetch, optional flag to use cache
-- **Output**: HTML content as a string
-- **Side effects**: Creates cache files in the filesystem
 
-**Tests**:
+**Usage**:
 ```bash
-# Run the integration test that verifies caching
-bun run test:fetcher:integration
+# Fetch any URL (automatically handles Cloudflare)
+bun run fetch https://example.com
 
-# Test with a custom URL
-bun run test:fetcher:url https://your-custom-url.com
+# Fetch with explicit Puppeteer mode
+bun run fetch https://example.com --puppeteer
 
-# Fetch a URL directly
-bun run fetch https://your-custom-url.com
+# Customize wait time for Cloudflare challenge
+bun run fetch https://example.com --puppeteer --wait=20000
+
+# Customize timeout and disable cache
+bun run fetch https://example.com --timeout=60000 --no-cache
 ```
 
 ### Converter Module (`src/converter/`)

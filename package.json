@@ -9,9 +9,12 @@
     "dev": "bun --watch run src/index.ts",
     "build": "bun build src/index.ts",
     "test": "bun test",
-    "test:fetcher:integration": "bun tests/integration/fetcher.test.ts",
-    "test:fetcher:url": "bun tests/test-fetcher-url.ts",
-    "fetch": "bun fetch-url.ts"
+    "test:fetcher": "bun run tests/integration/fetcher.test.ts",
+    "test:fetcher:custom": "bun run tests/test-fetcher-custom.ts",
+    "test:processor": "bun run tests/integration/processor.test.ts",
+    "test:openai": "bun run tests/test-openai.ts",
+    "fetch": "bun run scripts/fetch-url.ts",
+    "fetch:puppeteer": "bun run scripts/fetch-url.ts --puppeteer"
   },
   "keywords": [
     "markdown",
@@ -31,6 +34,7 @@
     "jsdom": "^26.0.0",
     "mkdirp": "^3.0.1",
     "openai": "^4.92.1",
+    "puppeteer": "^24.6.0",
     "sharp": "^0.34.1",
     "turndown": "^7.2.0"
   },

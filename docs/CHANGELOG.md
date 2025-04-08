@@ -95,6 +95,24 @@ This document tracks the progress of the Site Snacker project compared to the or
 - Added custom URL test option for fetcher module
 - Added direct URL fetcher script for quick access
 - Removed redundant test-fetcher.ts file to reduce confusion
+- Enhanced fetcher module with Cloudflare protection handling
+- Added retry mechanism with configurable attempts and delays
+- Added specialized headers for Cloudflare-protected sites
+- Improved error handling for Cloudflare challenges
+- Added command-line options to fetch-url.ts script
+- Implemented Puppeteer-based fetching for Cloudflare-protected sites
+- Removed redundant test-fetcher-url.ts in favor of fetch-url.ts
+- Updated documentation to reflect new Puppeteer-based Cloudflare handling
+- Simplified command-line interface with automatic Cloudflare detection
+- Moved `fetch-url.ts` from root directory to `scripts/` directory for better organization
+- Updated `package.json` scripts to reflect the new location of `fetch-url.ts`
+- Simplified `fetch-url.ts` to use `fetchHtml` and `processMarkdownContent` directly
+- Added proper directory creation for output files in `fetch-url.ts`
+- Updated package.json scripts for better organization and clarity
+- Added new `fetch:puppeteer` script for explicit Puppeteer mode
+- Reorganized README.md usage section with clear command categories
+- Fixed test:fetcher script path to point to integration tests
+- Improved documentation of available test commands
 
 ### Added
 - Implemented audio processing functionality in content processor module
@@ -102,8 +120,18 @@ This document tracks the progress of the Site Snacker project compared to the or
 - Added caching mechanism for processed content
 - Added test scripts for fetcher module in package.json
 - Added detailed documentation for each module in README.md
-- Added new test script for testing fetcher with custom URLs
 - Added direct URL fetcher script for quick access to the fetcher module
+- Added Cloudflare detection and handling capabilities
+- Added Puppeteer-based fetching for Cloudflare-protected sites
+- Added automatic fallback to Puppeteer when Cloudflare is detected
+- Added configurable wait times for Cloudflare challenges
+
+### Removed
+- Removed redundant test-fetcher.ts file
+- Removed test-fetcher-url.ts in favor of unified fetch-url.ts
+- Removed fetch-page.ts in favor of more capable fetch-url.ts
+- Removed outdated Cloudflare header-based approach
+- Removed retry mechanism in favor of Puppeteer-based solution
 
 ### Tested
 - Verified HTML to Markdown conversion with test URL
@@ -112,3 +140,5 @@ This document tracks the progress of the Site Snacker project compared to the or
 - Tested table conversion with various table structures
 - Tested image processing with sample markdown
 - Tested fetcher module with example.com and hahment.com URLs
+- Tested Puppeteer-based fetching with Cloudflare-protected sites
+- Verified automatic fallback to Puppeteer when needed
