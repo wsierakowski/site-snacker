@@ -1,0 +1,22 @@
+# Processor Configuration
+
+# OpenAI API Configuration
+openai:
+  api_key: ${OPEN_AI_API_KEY}  # Will be replaced with environment variable
+
+# Image Processing Configuration
+image:
+  model: "gpt-4-vision-preview"
+  max_tokens: 500
+  prompt: "Describe this image in detail. If it's a UI screenshot, describe the interface elements. If it's a diagram, explain what it represents. Alt text: {altText}"
+
+# Audio Processing Configuration
+audio:
+  model: "whisper-1"
+  language: "en"
+  response_format: "text"
+
+# General Configuration
+output:
+  base_dir: "output"
+  temp_dir: "tmp" 

@@ -1,24 +1,34 @@
 #!/usr/bin/env bun
 
+import { htmlToMarkdown, saveMarkdown } from './converter/index.js';
 import { fetchHtml } from './fetcher/index.js';
-
-// Hardcoded URL for testing
-const TEST_URL = 'https://doc.sitecore.com/search/en/users/search-user-guide/attributes.html';
+import { processMarkdownContent } from './processor/index.js';
 
 async function main() {
+  console.log('Site Snacker - Converting websites to Markdown');
+  
+  // Get URL from command line arguments or use default
+  const url = process.argv[2] || 'https://doc.sitecore.com/search/en/users/search-user-guide/attributes.html';
+  console.log('Processing URL:', url);
+  
   try {
-    console.log('Site Snacker - Converting websites to Markdown');
-    console.log(`Testing with URL: ${TEST_URL}`);
+    // Fetch the webpage content
+    console.log('Fetching HTML content...');
+    const html = await fetchHtml(url);
     
-    // Fetch the HTML content
-    const html = await fetchHtml(TEST_URL);
+    // Convert HTML to Markdown
+    console.log('Converting HTML to Markdown...');
+    const markdown = await htmlToMarkdown(html);
     
-    // Log the first 500 characters of the HTML to verify it worked
-    console.log('HTML content preview:');
-    console.log(html.substring(0, 500) + '...');
+    // Process the Markdown content (images, audio)
+    console.log('Processing Markdown content...');
+    const processedMarkdown = await processMarkdownContent(markdown, url);
     
-    // TODO: Implement HTML to Markdown conversion
-    console.log('HTML fetched successfully!');
+    // Save the processed Markdown content
+    console.log('Saving Markdown...');
+    saveMarkdown(processedMarkdown, url);
+    
+    console.log('Conversion completed successfully!');
   } catch (error) {
     console.error('Error in main process:', error);
     process.exit(1);
