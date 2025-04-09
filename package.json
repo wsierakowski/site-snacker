@@ -11,10 +11,12 @@
     "test": "bun test",
     "test:fetcher": "bun run tests/integration/fetcher.test.ts",
     "test:fetcher:custom": "bun run tests/test-fetcher-custom.ts",
+    "test:converter": "bun run tests/integration/converter.test.ts",
     "test:processor": "bun run tests/integration/processor.test.ts",
     "test:openai": "bun run tests/test-openai.ts",
     "fetch": "bun run scripts/fetch-url.ts",
-    "fetch:puppeteer": "bun run scripts/fetch-url.ts --puppeteer"
+    "fetch:puppeteer": "bun run scripts/fetch-url.ts --puppeteer",
+    "convert": "bun run scripts/convert-url.ts"
   },
   "keywords": [
     "markdown",

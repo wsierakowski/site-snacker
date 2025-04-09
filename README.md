@@ -53,6 +53,12 @@ bun run fetch:puppeteer https://example.com
 bun run fetch https://example.com --puppeteer --wait=20000 --timeout=60000 --no-cache
 ```
 
+### Converting URLs to Markdown
+```bash
+# Convert a URL to Markdown (uses cached HTML if available)
+bun run convert https://example.com
+```
+
 ### Running Tests
 ```bash
 # Run fetcher integration tests
@@ -60,6 +66,9 @@ bun run test:fetcher
 
 # Run fetcher tests with custom URL
 bun run test:fetcher:custom
+
+# Run converter integration tests
+bun run test:converter
 
 # Run processor integration tests
 bun run test:processor

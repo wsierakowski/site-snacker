@@ -113,6 +113,11 @@ This document tracks the progress of the Site Snacker project compared to the or
 - Reorganized README.md usage section with clear command categories
 - Fixed test:fetcher script path to point to integration tests
 - Improved documentation of available test commands
+- Updated package.json scripts for better organization and clarity
+- Added new `fetch:puppeteer` script for explicit Puppeteer mode
+- Reorganized README.md usage section with clear command categories
+- Fixed test:fetcher script path to point to integration tests
+- Improved documentation of available test commands
 
 ### Added
 - Implemented audio processing functionality in content processor module
@@ -125,6 +130,11 @@ This document tracks the progress of the Site Snacker project compared to the or
 - Added Puppeteer-based fetching for Cloudflare-protected sites
 - Added automatic fallback to Puppeteer when Cloudflare is detected
 - Added configurable wait times for Cloudflare challenges
+- Added integration test for converter module (`tests/integration/converter.test.ts`)
+- Added `convert-url.ts` script for converting HTML to Markdown
+- Added `convert` command to package.json
+- Added `test:converter` command to package.json
+- Added documentation for converter test and convert-url script in README.md
 
 ### Removed
 - Removed redundant test-fetcher.ts file

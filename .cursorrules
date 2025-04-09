@@ -1,1 +1,2 @@
-For every iteration please update the docs/CHANGELOG.md file so that when a new agent has to pick up, it will know the diff between the docs/PLAN.md and the current state.
+- Before changing anything always ask me to ensure I'm happy with proposed changes.
+- For every iteration please update the docs/CHANGELOG.md file so that when a new agent has to pick up, it will know the diff between the docs/PLAN.md and the current state.
