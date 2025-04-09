@@ -35,7 +35,7 @@ async function main() {
     
     // Save Markdown to tmp directory
     console.log('Saving Markdown to tmp directory...');
-    const markdownPath = urlToFilePath(url).replace(/\.html$/, '.md');
+    const markdownPath = htmlFilePath.replace(/\.html$/, '.md');
     await fs.promises.mkdir(path.dirname(markdownPath), { recursive: true });
     await fs.promises.writeFile(markdownPath, markdown);
     console.log(`Markdown saved to: ${markdownPath}`);

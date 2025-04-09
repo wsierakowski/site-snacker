@@ -3,6 +3,7 @@ import * as path from 'path';
 import axios from 'axios';
 import OpenAI from 'openai';
 import { urlToFilePath, urlToDirPath } from '../utils/url.js';
+import { downloadFile } from '../utils/download.js';
 import * as yaml from 'js-yaml';
 import { ProcessorConfig } from './types.js';
 import sharp from 'sharp';
@@ -101,10 +102,16 @@ export async function processImages(
   // Regular expression to find image markdown syntax: ![alt text](url)
   const imageRegex = /!\[(.*?)\]\((.*?)\)/g;
   
-  // Create a temporary directory for downloaded images
-  const tmpDir = path.join(outputDir, 'tmp');
+  // Use the existing tmp directory structure
+  const tmpDir = urlToDirPath(baseUrl);
   if (!fs.existsSync(tmpDir)) {
     fs.mkdirSync(tmpDir, { recursive: true });
+  }
+  
+  // Create images subdirectory
+  const imagesDir = path.join(tmpDir, 'images');
+  if (!fs.existsSync(imagesDir)) {
+    fs.mkdirSync(imagesDir, { recursive: true });
   }
   
   // Process each image
@@ -115,54 +122,63 @@ export async function processImages(
     const [fullMatch, altText, imageUrl] = match;
     
     try {
-      // Resolve relative URLs
-      const absoluteImageUrl = new URL(imageUrl, baseUrl).toString();
-      console.log('Attempting to download image from:', absoluteImageUrl);
-      
       let imageBuffer: Buffer;
-      if (absoluteImageUrl.startsWith('file://')) {
+      let contentType: string | undefined;
+      let originalUrl: string | undefined;
+      
+      if (imageUrl.startsWith('file://')) {
         // For local files, read directly from the filesystem
-        const localPath = absoluteImageUrl.replace('file://', '');
+        const localPath = imageUrl.replace('file://', '');
         imageBuffer = fs.readFileSync(localPath);
       } else {
-        // For remote files, download using axios
-        const response = await axios.get(absoluteImageUrl, {
-          responseType: 'arraybuffer',
+        // For remote files, download using the utility
+        console.log('Downloading image...');
+        const result = await downloadFile(imageUrl, baseUrl, {
           headers: {
-            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
             'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
-            'Accept-Language': 'en-US,en;q=0.9',
-            'Accept-Encoding': 'gzip, deflate, br',
-            'Cache-Control': 'no-cache',
-            'Pragma': 'no-cache',
-            'Sec-Ch-Ua': '"Chromium";v="122", "Not(A:Brand";v="24", "Google Chrome";v="122"',
-            'Sec-Ch-Ua-Mobile': '?0',
-            'Sec-Ch-Ua-Platform': '"macOS"',
             'Sec-Fetch-Dest': 'image',
-            'Sec-Fetch-Mode': 'no-cors',
-            'Sec-Fetch-Site': 'same-origin',
-            'Referer': baseUrl,
           }
         });
-        imageBuffer = Buffer.from(response.data);
+        imageBuffer = result.buffer;
+        contentType = result.contentType;
+        originalUrl = result.originalUrl;
       }
       
-      // Save the image to a temporary file
-      const imageFileName = path.basename(imageUrl).split('?')[0] || 'image.png';
-      const imagePath = path.join(tmpDir, imageFileName);
+      // Extract file name and extension from the URL
+      let imageFileName: string;
+      
+      if (originalUrl) {
+        // If we have an original URL (from Next.js image URL), use that for the filename
+        const originalUrlObj = new URL(originalUrl);
+        imageFileName = path.basename(originalUrlObj.pathname);
+      } else {
+        // For direct URLs, use the basename
+        const urlObj = new URL(imageUrl, baseUrl);
+        imageFileName = path.basename(urlObj.pathname.split('?')[0]);
+      }
+      
+      // If no extension, try to get it from content type or default to .png
+      if (!path.extname(imageFileName)) {
+        const ext = contentType ? `.${contentType.split('/')[1]}` : '.png';
+        imageFileName += ext;
+      }
+      
+      // Save the image to the images directory
+      const imagePath = path.join(imagesDir, imageFileName);
       fs.writeFileSync(imagePath, imageBuffer);
+      console.log('Image saved to:', imagePath);
       
-      // Generate image description using OpenAI's API
-      const description = await generateImageDescription(imagePath, altText);
+      // Temporarily skip OpenAI processing
+      // const description = await generateImageDescription(imagePath, altText);
+      // const imageWithDescription = `${fullMatch}\n\n<image_description>${description}</image_description>\n\n`;
+      // processedMarkdown = processedMarkdown.replace(fullMatch, imageWithDescription);
       
-      // Add the description after the image markdown
-      const imageWithDescription = `${fullMatch}\n\n<image_description>${description}</image_description>\n\n`;
-      processedMarkdown = processedMarkdown.replace(fullMatch, imageWithDescription);
-      
-      console.log(`Processed image: ${absoluteImageUrl}`);
-    } catch (error) {
-      console.error(`Error processing image ${imageUrl}:`, error);
-      // Keep the original image markdown if processing fails
+      console.log('Image processing completed successfully\n');
+    } catch (error: any) {
+      console.error('Error processing image:', error.message);
+      // Add a note in the markdown about the failed processing
+      const errorNote = `\n\n> ⚠️ Failed to process image: ${error.message}\n\n`;
+      processedMarkdown = processedMarkdown.replace(fullMatch, `${fullMatch}${errorNote}`);
     }
   }
   

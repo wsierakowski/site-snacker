@@ -30,8 +30,8 @@ export async function processAudio(
   // Regular expression to find audio markdown syntax: [audio text](url)
   const audioRegex = /\[(.*?)\]\((.*?)\)/g;
   
-  // Create a temporary directory for downloaded audio files
-  const tmpDir = path.join(config.output.temp_dir, urlToFilePath(baseUrl).replace(/\.html$/, ''));
+  // Use the existing tmp directory structure
+  const tmpDir = urlToFilePath(baseUrl).replace(/\.html$/, '');
   if (!fs.existsSync(tmpDir)) {
     fs.mkdirSync(tmpDir, { recursive: true });
   }

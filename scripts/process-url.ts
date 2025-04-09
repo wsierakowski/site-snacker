@@ -17,11 +17,16 @@ async function main() {
   }
 
   try {
-    // Find the markdown file in cache
+    // First convert URL to file path, then replace .html with .md
     const markdownPath = urlToFilePath(url).replace(/\.html$/, '.md');
+    
     if (!fs.existsSync(markdownPath)) {
       console.error(`No markdown file found in cache for URL: ${url}`);
       console.error(`Expected path: ${markdownPath}`);
+      console.error('\nPlease make sure to:');
+      console.error('1. Run the converter first: bun run convert ' + url);
+      console.error('2. Check if the URL is correct');
+      console.error('3. Verify that the markdown file exists in the tmp directory');
       process.exit(1);
     }
 
@@ -34,7 +39,9 @@ async function main() {
 
     // Process the markdown content
     console.log('Processing markdown for images and audio...');
-    const processedMarkdown = await processMarkdownContent(markdown, url, outputDir);
+    // Remove .html for the base URL used in processing
+    const baseUrl = url.replace(/\.html$/, '');
+    const processedMarkdown = await processMarkdownContent(markdown, baseUrl, outputDir);
 
     // Save processed markdown
     const processedPath = path.join(outputDir, path.basename(markdownPath));
@@ -44,6 +51,10 @@ async function main() {
     console.log(`Processed markdown saved to: ${processedPath}`);
   } catch (error) {
     console.error('Error:', error.message);
+    if (error.response) {
+      console.error('Response status:', error.response.status);
+      console.error('Response data:', error.response.data);
+    }
     process.exit(1);
   }
 }
