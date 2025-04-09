@@ -85,6 +85,8 @@ This document tracks the progress of the Site Snacker project compared to the or
 ## [Unreleased]
 
 ### Changed
+- Modified `convert-url.ts` to save markdown files to tmp directory instead of output
+- Improved file organization by keeping intermediate files in tmp directory
 - Fixed function name conflicts in processor module by removing local function declarations for `processImages` and `processAudio`
 - Updated fetcher code to properly use `mkdirp` library and removed unused imports
 - Fixed mkdirp import to use named import instead of default import
@@ -121,6 +123,18 @@ This document tracks the progress of the Site Snacker project compared to the or
 - Improved converter code with better error handling and code organization
 - Extracted common directory creation logic in converter module
 - Fixed JSDoc comments in converter module
+- Refactored processor module to use shared utilities
+- Fixed OpenAI client initialization and configuration loading
+- Updated YAML parsing to use js-yaml instead of yaml package
+- Improved type safety in processor module
+- Fixed linter errors in processor module
+- Corrected OpenAI API key configuration access
+- Resolved code duplication in image and audio processing
+- New `utils.ts` file in processor module with shared functionality
+- Improved error handling in processor module
+- Enabled audio processing in main processor module
+- New `process-url.ts` script for processing cached markdown content
+- Added `process` command to package.json for easy access to markdown processing
 
 ### Added
 - Implemented audio processing functionality in content processor module
@@ -138,6 +152,8 @@ This document tracks the progress of the Site Snacker project compared to the or
 - Added `convert` command to package.json
 - Added `test:converter` command to package.json
 - Added documentation for converter test and convert-url script in README.md
+- New `process-url.ts` script for processing cached markdown content
+- Added `process` command to package.json for easy access to markdown processing
 
 ### Removed
 - Removed redundant test-fetcher.ts file

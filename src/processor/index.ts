@@ -1,42 +1,49 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import OpenAI from 'openai';
-import { processImages } from './image.js';
-import * as yaml from 'js-yaml';
-import { ProcessorConfig } from './types.js';
+import { load } from 'js-yaml';
+import { processImages } from './image';
+import { processAudio } from './audio';
+import { ensureDirectoryExists } from './utils';
+import { ProcessorConfig } from './types';
 
 // Load configuration
-const config = yaml.load(fs.readFileSync(path.join(__dirname, 'processor.conf.yml'), 'utf8')) as ProcessorConfig;
+const configPath = path.join(__dirname, 'processor.conf.yml');
+const configFile = fs.readFileSync(configPath, 'utf8');
+const config: ProcessorConfig = load(configFile) as ProcessorConfig;
 
 // Initialize OpenAI client
 const openai = new OpenAI({
-  apiKey: process.env.OPEN_AI_API_KEY,
+  apiKey: process.env.OPENAI_API_KEY || config.openai.api_key,
 });
 
 /**
- * Process markdown content to handle images and audio
+ * Processes markdown content to handle images and audio
  * @param markdown The markdown content to process
- * @param baseUrl The base URL of the original HTML content
- * @param outputDir The directory to save processed content (default: 'output')
+ * @param baseUrl The base URL for resolving relative URLs
+ * @param outputDir The directory to save processed files to
  * @returns The processed markdown content
  */
 export async function processMarkdownContent(
   markdown: string,
   baseUrl: string,
-  outputDir: string = 'output'
+  outputDir: string
 ): Promise<string> {
-  // Override temp_dir from config if outputDir is provided
-  if (outputDir !== 'output') {
-    config.output.temp_dir = outputDir;
-  }
+  try {
+    // Ensure output directory exists
+    ensureDirectoryExists(outputDir);
 
-  // Process images
-  const processedMarkdown = await processImages(markdown, baseUrl, outputDir);
-  
-  // Skip audio processing for now
-  // const finalMarkdown = await processAudio(processedMarkdown, baseUrl, outputDir);
-  
-  return processedMarkdown;
+    // Process images
+    const markdownWithProcessedImages = await processImages(markdown, baseUrl, outputDir);
+
+    // Process audio
+    const markdownWithProcessedAudio = await processAudio(markdownWithProcessedImages, baseUrl, outputDir);
+
+    return markdownWithProcessedAudio;
+  } catch (error: any) {
+    console.error('Error processing markdown content:', error.message);
+    throw error;
+  }
 }
 
 /**

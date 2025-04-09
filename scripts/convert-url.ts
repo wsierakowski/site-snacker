@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 
-import { htmlToMarkdown, saveMarkdown, generateMetadata } from '../src/converter/index.js';
+import { htmlToMarkdown, generateMetadata } from '../src/converter/index.js';
 import { fetchHtml } from '../src/fetcher/index.js';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -33,9 +33,11 @@ async function main() {
     console.log('Converting HTML to Markdown...');
     const markdown = await htmlToMarkdown(html);
     
-    // Save Markdown to file
-    console.log('Saving Markdown to file...');
-    const markdownPath = saveMarkdown(markdown, url);
+    // Save Markdown to tmp directory
+    console.log('Saving Markdown to tmp directory...');
+    const markdownPath = urlToFilePath(url).replace(/\.html$/, '.md');
+    await fs.promises.mkdir(path.dirname(markdownPath), { recursive: true });
+    await fs.promises.writeFile(markdownPath, markdown);
     console.log(`Markdown saved to: ${markdownPath}`);
     
     // Generate metadata
