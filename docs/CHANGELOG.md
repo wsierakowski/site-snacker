@@ -118,6 +118,9 @@ This document tracks the progress of the Site Snacker project compared to the or
 - Reorganized README.md usage section with clear command categories
 - Fixed test:fetcher script path to point to integration tests
 - Improved documentation of available test commands
+- Improved converter code with better error handling and code organization
+- Extracted common directory creation logic in converter module
+- Fixed JSDoc comments in converter module
 
 ### Added
 - Implemented audio processing functionality in content processor module
