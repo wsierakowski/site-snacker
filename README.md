@@ -148,6 +148,14 @@ bun run test:processor
 
 # Test OpenAI API integration
 bun run test:openai
+
+# Run script integration tests
+bun run test:fetch-url
+bun run test:convert-url
+bun run test:process-url
+
+# Run all script integration tests
+bun run test:scripts
 ```
 
 ## Project Modules
