@@ -1,35 +1,35 @@
 #!/usr/bin/env bun
 
 import { fetchHtml } from '../src/fetcher';
-import { processMarkdownContent } from '../src/processor';
-import { writeFile, mkdir } from 'fs/promises';
+import { fetchWithPuppeteer } from '../src/fetcher/puppeteer';
 import path from 'path';
+import { urlToFilePath } from '../src/utils/url.js';
 
 /**
  * Simple script to fetch a URL directly using the fetcher module
  */
 async function main() {
-  const url = process.argv[2];
+  const args = process.argv.slice(2);
+  const url = args[0];
+  const usePuppeteer = args.includes('--puppeteer');
+
   if (!url) {
     console.error('Please provide a URL to fetch');
+    console.error('Usage: bun run fetch <url> [--puppeteer]');
     process.exit(1);
   }
 
   try {
-    const html = await fetchHtml(url);
+    console.log(`Fetching ${url}${usePuppeteer ? ' using Puppeteer' : ''}...`);
     
-    // Create output directory if it doesn't exist
-    const outputDir = path.join(process.cwd(), 'output');
-    await mkdir(outputDir, { recursive: true });
+    // fetchHtml and fetchWithPuppeteer both handle caching automatically
+    const html = usePuppeteer ? 
+      await fetchWithPuppeteer(url) : 
+      await fetchHtml(url);
     
-    await writeFile(path.join(outputDir, 'fetched.html'), html);
-    
-    // Process the markdown content
-    const processedMarkdown = await processMarkdownContent(html, url, outputDir);
-    await writeFile(path.join(outputDir, 'processed.md'), processedMarkdown);
-
-    console.log('Content fetched and processed successfully!');
-    console.log(`Output files saved in: ${outputDir}`);
+    const cacheFile = urlToFilePath(url);
+    console.log('Content fetched and cached successfully!');
+    console.log(`Cached at: ${cacheFile}`);
   } catch (error) {
     console.error('Error:', error.message);
     process.exit(1);

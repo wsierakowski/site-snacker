@@ -17,6 +17,9 @@ export function urlToFilePath(url: string, baseDir: string = 'tmp'): string {
     // If the path is empty, use 'index.html'
     if (!urlPath) {
       urlPath = 'index.html';
+    } else if (!urlPath.endsWith('.html')) {
+      // Add .html extension if not present
+      urlPath += '.html';
     }
     
     // Combine into a file path

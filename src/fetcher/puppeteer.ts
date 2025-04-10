@@ -21,9 +21,9 @@ export async function fetchWithPuppeteer(
 ): Promise<string> {
   const {
     useCache = true,
-    waitTime = 10000, // Time to wait for Cloudflare challenge to complete
-    timeout = 30000,  // Overall timeout
-    waitForSelector = 'body' // Wait for this element to be present
+    waitTime = 15000, // Increased default wait time
+    timeout = 60000,  // Increased timeout
+    waitForSelector = 'body'
   } = options;
 
   // Convert URL to file path for caching
@@ -38,40 +38,43 @@ export async function fetchWithPuppeteer(
 
   console.log(`Fetching ${url} with Puppeteer...`);
   
-  // Launch browser
+  // Launch browser with new headless mode
   const browser = await puppeteer.launch({
-    headless: true, // Use headless mode
+    headless: true as any, // Use new headless mode but satisfy TypeScript
     args: [
       '--no-sandbox',
       '--disable-setuid-sandbox',
       '--disable-dev-shm-usage',
       '--disable-accelerated-2d-canvas',
       '--disable-gpu',
-      '--window-size=1920x1080'
+      '--window-size=1920x1080',
+      '--disable-notifications',
+      '--disable-extensions',
+      '--ignore-certificate-errors'
     ]
   });
 
   try {
     const page = await browser.newPage();
 
-    // Set viewport and user agent
+    // Set more browser-like settings
     await page.setViewport({ width: 1920, height: 1080 });
     await page.setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36');
+    await page.setExtraHTTPHeaders({
+      'Accept-Language': 'en-US,en;q=0.9',
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+      'Connection': 'keep-alive',
+      'Upgrade-Insecure-Requests': '1',
+      'DNT': '1'
+    });
 
     // Set default timeout
     page.setDefaultTimeout(timeout);
 
-    // Enable request interception to handle potential redirects
-    await page.setRequestInterception(true);
-    page.on('request', (request) => {
-      if (['image', 'stylesheet', 'font', 'script'].includes(request.resourceType())) {
-        request.abort();
-      } else {
-        request.continue();
-      }
-    });
+    // Enable JavaScript and cookies
+    await page.setJavaScriptEnabled(true);
 
-    // Navigate to the URL
+    // Navigate to the URL with more options
     await page.goto(url, {
       waitUntil: 'networkidle0',
       timeout: timeout
@@ -91,7 +94,7 @@ export async function fetchWithPuppeteer(
 
     // Check if we got a Cloudflare challenge page
     if (html.includes('Just a moment') || html.includes('cf-browser-verification')) {
-      throw new Error('Still getting Cloudflare challenge page after waiting. Try increasing the wait time.');
+      throw new Error('Still getting Cloudflare challenge page. Try increasing the wait time with --wait=20000');
     }
 
     // Create cache directory and save content if successful

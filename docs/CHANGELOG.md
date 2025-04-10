@@ -135,6 +135,28 @@ This document tracks the progress of the Site Snacker project compared to the or
 - Enabled audio processing in main processor module
 - New `process-url.ts` script for processing cached markdown content
 - Added `process` command to package.json for easy access to markdown processing
+- Updated ProcessorConfig interface in types.ts to match processor.conf.yml structure
+- Removed duplicate ProcessorConfig interface from image.ts to use the one from types.ts
+- Removed OpenAI API key from processor.conf.yml in favor of using OPENAI_API_KEY environment variable
+- Fixed inconsistent environment variable name (OPEN_AI_API_KEY -> OPENAI_API_KEY)
+- Added environment variable validation for OPENAI_API_KEY
+- Added feature to save image descriptions as separate markdown files alongside the images
+- Separated fetch and process functionality in fetch-url.ts script to maintain single responsibility
+- Updated fetch-url.ts to only handle HTML fetching and caching
+- Removed redundant output directory creation from fetch script, now only uses tmp directory for caching
+- Added OpenAI API cost tracking and reporting in processor module
+- Updated process-url.ts to display cost summary after processing
+- Updated image processor to use model from config instead of hardcoding "gpt-4-vision-preview"
+- Fixed image model name in processor.conf.yml from "gpt-4o" to "gpt-4-vision-preview"
+- Moved fetch-url.ts script to scripts directory for better organization
+- Added new "fetch" script to package.json for direct URL fetching
+- Updated README.md with fetch script usage instructions
+
+### Fixed
+- Resolved duplicate ProcessorConfig interface definition
+- Fixed mkdirp import to use named import
+- Corrected OpenAI API types in image processor
+- Removed duplicate function declarations in processor/index.ts
 
 ### Added
 - Implemented audio processing functionality in content processor module
@@ -154,6 +176,9 @@ This document tracks the progress of the Site Snacker project compared to the or
 - Added documentation for converter test and convert-url script in README.md
 - New `process-url.ts` script for processing cached markdown content
 - Added `process` command to package.json for easy access to markdown processing
+- New cost-tracker.ts module for tracking OpenAI API usage and costs
+- Cost estimation for GPT-4 Vision and Whisper API calls
+- Detailed cost breakdown in processing output
 
 ### Removed
 - Removed redundant test-fetcher.ts file

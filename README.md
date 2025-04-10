@@ -24,6 +24,79 @@ cd site-snacker
 bun install
 ```
 
+3. Set up your environment:
+```bash
+# Create a .env file and add your OpenAI API key
+echo "OPENAI_API_KEY=your_api_key_here" > .env
+```
+
+## Quick Start Guide
+
+Follow these steps to fetch, convert, and process a webpage:
+
+1. **Fetch the webpage**:
+```bash
+# This will download the HTML and cache it in tmp/[domain]/[path]
+bun run fetch https://example.com
+
+# For Cloudflare-protected sites, use the Puppeteer option:
+bun run fetch:puppeteer https://example.com
+# or
+bun run fetch https://example.com --puppeteer
+```
+
+2. **Convert HTML to Markdown**:
+```bash
+# This will convert the cached HTML to Markdown
+bun run convert https://example.com
+```
+
+3. **Process the Markdown** (adds image descriptions and audio transcriptions):
+```bash
+# This will process the converted Markdown, adding AI-generated descriptions
+bun run process https://example.com
+```
+
+### Example with Real URL
+
+Here's a complete example using a Wikipedia article about the Golden Gate Bridge:
+
+```bash
+# 1. Fetch the page
+bun run fetch https://en.wikipedia.org/wiki/Golden_Gate_Bridge
+
+# 2. Convert to Markdown
+bun run convert https://en.wikipedia.org/wiki/Golden_Gate_Bridge
+
+# 3. Process with AI
+bun run process https://en.wikipedia.org/wiki/Golden_Gate_Bridge
+```
+
+After running these commands:
+- The HTML will be cached in `tmp/en.wikipedia.org/...`
+- The Markdown will be saved in the same directory
+- Processed Markdown with image descriptions will be in the same location
+- Each image will have a corresponding `.md` file with its AI-generated description (e.g., `Golden_Gate_Bridge_0.jpg.md`)
+- The AI will generate detailed descriptions of the bridge's architecture, historical photos, and technical diagrams
+
+### Example with Cloudflare-Protected Site
+
+If you encounter a Cloudflare challenge, the script will let you know and provide instructions. Here's how to handle it:
+
+```bash
+# First attempt might fail with Cloudflare challenge
+bun run fetch https://example.com
+
+# Retry using the Puppeteer option
+bun run fetch:puppeteer https://example.com
+# or
+bun run fetch https://example.com --puppeteer
+
+# Then proceed with convert and process as usual
+bun run convert https://example.com
+bun run process https://example.com
+```
+
 ## Usage
 
 ### Basic Commands

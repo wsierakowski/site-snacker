@@ -6,13 +6,18 @@ import { urlToFilePath } from '../utils/url.js';
 import * as yaml from 'js-yaml';
 import { ProcessorConfig } from './types.js';
 import { TranscriptionCreateParams } from 'openai/resources/audio/transcriptions';
+import { openai as globalOpenai, config as globalConfig, costTracker } from './index.js';
 
 // Load configuration
 const config = yaml.load(fs.readFileSync(path.join(__dirname, 'processor.conf.yml'), 'utf8')) as ProcessorConfig;
 
 // Initialize OpenAI client
+if (!process.env.OPENAI_API_KEY) {
+  throw new Error('OPENAI_API_KEY environment variable is not set');
+}
+
 const openai = new OpenAI({
-  apiKey: process.env.OPEN_AI_API_KEY,
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
 /**
@@ -89,18 +94,19 @@ export async function processAudio(
  */
 async function generateAudioTranscription(audioPath: string, linkText: string): Promise<string> {
   try {
-    // Read the audio file
-    const audioBuffer = fs.readFileSync(audioPath);
+    // Get audio duration in seconds
+    const { duration } = await getAudioDuration(audioPath);
     
     // Call OpenAI's API to transcribe the audio
-    const params: TranscriptionCreateParams = {
+    const response = await openai.audio.transcriptions.create({
       file: fs.createReadStream(audioPath),
       model: config.audio.model,
       language: config.audio.language,
       response_format: config.audio.response_format as "json" | "text" | "srt" | "verbose_json" | "vtt"
-    };
-    
-    const response = await openai.audio.transcriptions.create(params);
+    });
+
+    // Track the API cost
+    costTracker.trackAudioAPI(config.audio.model, duration);
     
     // Convert response to string if it's not already a string
     return typeof response === 'string' ? response : JSON.stringify(response);
@@ -108,4 +114,12 @@ async function generateAudioTranscription(audioPath: string, linkText: string): 
     console.error("Error generating audio transcription:", error);
     return `[Error generating transcription for audio: ${linkText}]`;
   }
+}
+
+/**
+ * Get the duration of an audio file in seconds
+ */
+async function getAudioDuration(audioPath: string): Promise<{ duration: number }> {
+  // For now, return a default duration as getting actual duration requires additional dependencies
+  return { duration: 60 }; // Default to 1 minute for cost estimation
 } 

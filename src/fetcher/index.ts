@@ -126,7 +126,7 @@ export async function fetchHtml(
         
         // If this is the last attempt, throw an error
         if (attempt === retries - 1) {
-          throw new Error(`Cloudflare challenge detected for ${url}. Consider using a browser automation tool like Puppeteer.`);
+          throw new Error(`Cloudflare challenge detected for ${url}. Please try again with the Puppeteer option:\nbun run fetch:puppeteer ${url}\n\nOr add the --puppeteer flag:\nbun run fetch ${url} --puppeteer`);
         }
         
         // Otherwise, wait and retry

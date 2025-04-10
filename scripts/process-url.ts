@@ -41,14 +41,17 @@ async function main() {
     console.log('Processing markdown for images and audio...');
     // Remove .html for the base URL used in processing
     const baseUrl = url.replace(/\.html$/, '');
-    const processedMarkdown = await processMarkdownContent(markdown, baseUrl, outputDir);
+    const { content: processedMarkdown, costSummary } = await processMarkdownContent(markdown, baseUrl, outputDir);
 
     // Save processed markdown
     const processedPath = path.join(outputDir, path.basename(markdownPath));
     await fs.promises.writeFile(processedPath, processedMarkdown);
 
-    console.log('Content processed successfully!');
+    console.log('\nContent processed successfully!');
     console.log(`Processed markdown saved to: ${processedPath}`);
+    
+    // Display cost summary
+    console.log(costSummary);
   } catch (error) {
     console.error('Error:', error.message);
     if (error.response) {
