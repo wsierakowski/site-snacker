@@ -217,12 +217,20 @@ bun run fetch https://example.com --timeout=60000 --no-cache
 
 **Contract**:
 ```typescript
-async function htmlToMarkdown(html: string): Promise<string>
-function saveMarkdown(markdown: string, url: string): void
+import { htmlToMarkdown, saveMarkdown, generateMetadata } from './src/converter';
+
+// Convert HTML to Markdown
+const markdown = await htmlToMarkdown(html);
+
+// Save Markdown to a file
+const markdownPath = saveMarkdown(markdown, url, outputDir: string = 'tmp');
+
+// Generate metadata
+const metadataPath = generateMetadata(markdown, url, outputDir: string = 'tmp');
 ```
-- **Input**: HTML content as a string, URL for file naming
-- **Output**: Clean Markdown content as a string
-- **Side effects**: Saves Markdown to filesystem
+- **Input**: HTML string
+- **Output**: Markdown string, file paths
+- **Side effects**: Writes files to the tmp directory
 
 **Tests**:
 ```bash

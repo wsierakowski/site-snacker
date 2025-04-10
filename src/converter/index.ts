@@ -110,13 +110,13 @@ export async function htmlToMarkdown(html: string): Promise<string> {
 
 /**
  * Saves Markdown content to a file
- * @param markdown The Markdown content to save
+ * @param markdown The Markdown content
  * @param url The URL of the original HTML content
- * @param outputDir The directory to save the Markdown file (default: 'output')
+ * @param outputDir The directory to save the Markdown file (default: 'tmp')
  * @returns The path to the saved Markdown file
  * @throws Error if file operations fail
  */
-export function saveMarkdown(markdown: string, url: string, outputDir: string = 'output'): string {
+export function saveMarkdown(markdown: string, url: string, outputDir: string = 'tmp'): string {
   try {
     // Convert URL to file path, but change the extension to .md
     const filePath = urlToFilePath(url, outputDir).replace(/\.html$/, '.md');
@@ -139,14 +139,14 @@ export function saveMarkdown(markdown: string, url: string, outputDir: string = 
  * Generates metadata for the Markdown content
  * @param markdown The Markdown content
  * @param url The URL of the original HTML content
- * @param outputDir The directory to save the metadata file (default: 'output')
+ * @param outputDir The directory to save the metadata file (default: 'tmp')
  * @returns The path to the saved metadata file
  * @throws Error if file operations fail
  */
-export function generateMetadata(markdown: string, url: string, outputDir: string = 'output'): string {
+export function generateMetadata(markdown: string, url: string, outputDir: string = 'tmp'): string {
   try {
-    // Calculate metadata
-    const wordCount = markdown.split(/\s+/).length;
+    // Count words (split by whitespace and filter out empty strings)
+    const wordCount = markdown.split(/\s+/).filter(word => word.length > 0).length;
     const charCount = markdown.length;
     const lineCount = markdown.split('\n').length;
     

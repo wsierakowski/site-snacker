@@ -151,6 +151,8 @@ This document tracks the progress of the Site Snacker project compared to the or
 - Moved fetch-url.ts script to scripts directory for better organization
 - Added new "fetch" script to package.json for direct URL fetching
 - Updated README.md with fetch script usage instructions
+- Updated converter module to use 'tmp' as the default output directory instead of 'output'
+- Fixed urlToFilePath function to always add .html extension when not present
 
 ### Fixed
 - Resolved duplicate ProcessorConfig interface definition
