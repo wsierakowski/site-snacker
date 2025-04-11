@@ -4,6 +4,7 @@ import TurndownService from 'turndown';
 import * as fs from 'fs';
 import * as path from 'path';
 import { urlToFilePath } from '../utils/url.js';
+import { extractBreadcrumbs, breadcrumbsToMarkdown } from './helpers/breadcrumb-extractor.js';
 
 /**
  * Ensures a directory exists, creating it if necessary
@@ -30,6 +31,10 @@ export async function htmlToMarkdown(html: string): Promise<string> {
   try {
     const dom = new JSDOM(html);
     const document = dom.window.document;
+    
+    // Extract breadcrumbs before running Readability
+    const breadcrumbs = extractBreadcrumbs(html);
+    const breadcrumbMarkdown = breadcrumbsToMarkdown(breadcrumbs);
     
     const reader = new Readability(document);
     const article = reader.parse();
@@ -102,7 +107,9 @@ export async function htmlToMarkdown(html: string): Promise<string> {
       }
     });
     
-    return turndownService.turndown(article.content);
+    // Combine breadcrumbs with article content
+    const markdown = breadcrumbMarkdown + turndownService.turndown(article.content);
+    return markdown;
   } catch (error: any) {
     throw new Error(`Failed to convert HTML to Markdown: ${error.message}`);
   }
@@ -118,8 +125,8 @@ export async function htmlToMarkdown(html: string): Promise<string> {
  */
 export function saveMarkdown(markdown: string, url: string, outputDir: string = 'tmp'): string {
   try {
-    // Convert URL to file path, but change the extension to .md
-    const filePath = urlToFilePath(url, outputDir).replace(/\.html$/, '.md');
+    // Get the file path with .md extension
+    const filePath = urlToFilePath(url, outputDir, 'page.md');
     const dirPath = path.dirname(filePath);
 
     // Create directory if it doesn't exist
@@ -164,8 +171,8 @@ export function generateMetadata(markdown: string, url: string, outputDir: strin
       generatedAt: new Date().toISOString(),
     };
 
-    // Convert URL to file path, but change the extension to .metadata.txt
-    const filePath = urlToFilePath(url, outputDir).replace(/\.html$/, '.metadata.txt');
+    // Get the file path with .metadata.txt extension
+    const filePath = urlToFilePath(url, outputDir, 'page.metadata.txt');
     const dirPath = path.dirname(filePath);
 
     // Create directory if it doesn't exist

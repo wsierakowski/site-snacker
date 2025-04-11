@@ -157,24 +157,12 @@ export async function processImages(
   let imageCount = 0;
   
   // Get the markdown file directory to use as the base for images and cache
-  const markdownDir = markdownPath 
+  const pageDir = markdownPath 
     ? path.dirname(markdownPath)
     : urlToDirPath(baseUrl);
   
-  // Get the markdown file name without extension to use as subdirectory
-  const markdownName = markdownPath 
-    ? path.basename(markdownPath).replace(/\.[^.]+$/, '')
-    : 'default';
-  
-  // Create page directory if it doesn't exist
-  const pageDir = path.join(markdownDir, markdownName);
-  if (!fs.existsSync(pageDir)) {
-    fs.mkdirSync(pageDir, { recursive: true });
-  }
-  
   console.log('\nStarting image processing...');
   console.log('Base URL:', baseUrl);
-  console.log('Markdown directory:', markdownDir);
   console.log('Page directory:', pageDir);
   
   // Process each image

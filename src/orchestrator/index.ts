@@ -73,24 +73,34 @@ export async function orchestrate(
     // Get file paths
     const htmlPath = urlToFilePath(url);
     const markdownPath = htmlPath.replace(/\.html$/, '.md');
-    const processedPath = path.join('output', 'processed', path.basename(markdownPath));
+    const processedPath = path.join('output', 'processed', path.basename(path.dirname(markdownPath)), path.basename(markdownPath));
 
-    // Ensure output directory exists
-    const outputDir = path.dirname(processedPath);
-    if (!fs.existsSync(outputDir)) {
-      fs.mkdirSync(outputDir, { recursive: true });
+    // Ensure directories exist
+    const htmlDir = path.dirname(htmlPath);
+    const processedDir = path.dirname(processedPath);
+    if (!fs.existsSync(htmlDir)) {
+      fs.mkdirSync(htmlDir, { recursive: true });
     }
+    if (!fs.existsSync(processedDir)) {
+      fs.mkdirSync(processedDir, { recursive: true });
+    }
+
+    // Save HTML content
+    fs.writeFileSync(htmlPath, html);
 
     // Step 2: Convert to Markdown
     console.log('\n=== Step 2: Converting to Markdown ===');
     const markdown = await htmlToMarkdown(html);
+
+    // Save Markdown content
+    fs.writeFileSync(markdownPath, markdown);
 
     // Step 3: Process Markdown
     console.log('\n=== Step 3: Processing Markdown ===');
     const { content: processedMarkdown, costSummary } = await processMarkdownContent(
       markdown,
       url.replace(/\.html$/, ''),
-      outputDir,
+      processedDir,
       markdownPath
     );
 

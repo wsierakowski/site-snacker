@@ -83,15 +83,15 @@ bun run process https://en.wikipedia.org/wiki/Golden_Gate_Bridge
 ```
 
 After running these commands:
-- The HTML will be cached in `tmp/[domain]/[path].html`
-- The Markdown will be saved as `tmp/[domain]/[path].md`
+- The HTML will be cached in `tmp/[domain]/[path]/[filename].html`
+- The Markdown will be saved as `tmp/[domain]/[path]/[filename].md`
 - Each page's assets will be stored in a directory named after the page:
-  - Images: `tmp/[domain]/[path]/uuid-xxxx.png`
-  - Image descriptions: `tmp/[domain]/[path]/uuid-xxxx.md`
-  - Image cache: `tmp/[domain]/[path]/uuid-xxxx.png.json`
-  - Audio files: `tmp/[domain]/[path]/uuid-xxxx.mp3`
-  - Audio transcriptions: `tmp/[domain]/[path]/uuid-xxxx.md`
-  - Audio cache: `tmp/[domain]/[path]/uuid-xxxx.mp3.json`
+  - Images: `tmp/[domain]/[path]/[filename]/uuid-xxxx.png`
+  - Image descriptions: `tmp/[domain]/[path]/[filename]/uuid-xxxx.md`
+  - Image cache: `tmp/[domain]/[path]/[filename]/uuid-xxxx.png.json`
+  - Audio files: `tmp/[domain]/[path]/[filename]/uuid-xxxx.mp3`
+  - Audio transcriptions: `tmp/[domain]/[path]/[filename]/uuid-xxxx.md`
+  - Audio cache: `tmp/[domain]/[path]/[filename]/uuid-xxxx.mp3.json`
 - Processed Markdown with descriptions will be in `output/processed/[filename].md`
 
 For example, for `https://doc.sitecore.com/search/en/users/search-user-guide/attributes.html`:
