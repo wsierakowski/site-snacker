@@ -140,3 +140,6 @@ dist
 .ai_docs
 tmp
 output
+input
+
+.DS_Store

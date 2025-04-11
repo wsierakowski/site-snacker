@@ -32,15 +32,57 @@ echo "OPENAI_API_KEY=your_api_key_here" > .env
 
 ## Quick Start Guide
 
-The fastest way to process a webpage is using the `snack` command:
+The fastest way to process a webpage is using the `snack` command. It works seamlessly with both single URLs and sitemaps:
 
 ```bash
-# Process a webpage in one go (fetch, convert, and process)
+# Process a single webpage
 bun run snack https://example.com
 
-# For Cloudflare-protected sites:
+# Process a sitemap (automatically detects and processes all URLs)
+bun run snack https://example.com/sitemap.xml
+
+# Process a local sitemap file
+bun run snack ./local-sitemap.xml
+
+# All options work the same way for both single URLs and sitemaps
 bun run snack https://example.com --puppeteer
+bun run snack https://example.com/sitemap.xml --puppeteer
+
+# Disable automatic merging of sitemap pages (default is to merge)
+bun run snack https://example.com/sitemap.xml --no-merge
 ```
+
+The script automatically detects whether you've provided a single URL or a sitemap and handles it appropriately. When processing a sitemap, you'll see detailed progress information:
+
+```
+=== Processing Sitemap ===
+Found 34 URLs in sitemap
+
+=== Processing URL 1/34 (2.9%) ===
+URL: https://example.com/page1
+...
+
+=== Sitemap Processing Complete ===
+Total URLs: 34
+Successfully processed: 32
+Failed: 2
+
+Total Cost Summary:
+=== URL 1: https://example.com/page1 ===
+[Cost details for page 1]
+...
+
+Merged Markdown:
+All pages have been merged into: output/merged/sitemap-merged.md
+```
+
+By default, when processing a sitemap, all markdown files are automatically merged into a single file in the `output/merged` directory. This merged file:
+- Maintains the original order of pages from the sitemap
+- Includes clear separators between pages
+- Preserves breadcrumbs and source information
+- Is perfect for uploading to ChatGPT or Claude projects
+
+You can disable this merging behavior with the `--no-merge` option if you prefer to keep the files separate.
 
 Alternatively, you can run each step separately:
 
@@ -127,6 +169,22 @@ bun run fetch https://example.com --puppeteer
 bun run convert https://example.com
 bun run process https://example.com
 ```
+
+### Merging Processed Files
+
+If you need to merge multiple processed markdown files (especially when image descriptions are important), you can use the `merge:processed` command:
+
+```bash
+# Merge all processed files from the default directory (output/processed)
+bun run merge:processed output/merged/all-files.md
+
+# Merge files from a specific directory
+bun run merge:processed output/merged/custom-merge.md output/processed/sitecore-search
+
+# The script will preserve all image description tags
+```
+
+This is particularly useful when you need to ensure that image descriptions are properly preserved in the merged output.
 
 ## Usage
 
@@ -328,14 +386,17 @@ function urlToDirPath(url: string, baseDir: string = 'tmp'): string
 
 ### Orchestrator Module (`src/orchestrator/`)
 
-**Description**: Coordinates the entire process of fetching, converting, and processing a webpage.
+**Description**: Coordinates the entire process of fetching, converting, and processing webpages. Seamlessly handles both single URLs and sitemaps.
 
 **How it works**:
-- Takes a URL and optional configuration
-- Runs fetch, convert, and process steps in sequence
+- Takes a URL or sitemap and optional configuration
+- Automatically detects input type (single URL or sitemap)
+- For single URLs: processes the page directly
+- For sitemaps: processes all URLs in sequence
 - Handles file paths and directory creation
 - Provides detailed progress logging
 - Returns paths to all generated files
+- Tracks success/failure for each URL in sitemaps
 
 **Contract**:
 ```typescript
@@ -346,6 +407,11 @@ interface OrchestrationResult {
   costSummary: string;
 }
 
+interface SitemapOrchestrationResult {
+  results: OrchestrationResult[];
+  totalCostSummary: string;
+}
+
 async function orchestrate(
   url: string,
   options?: {
@@ -354,19 +420,23 @@ async function orchestrate(
     timeout?: number;
     useCache?: boolean;
   }
-): Promise<OrchestrationResult>
+): Promise<OrchestrationResult | SitemapOrchestrationResult>
 ```
 
 **Usage**:
 ```bash
-# Process a webpage in one go
+# Process a single webpage
 bun run snack https://example.com
 
-# Use Puppeteer for Cloudflare-protected sites
-bun run snack https://example.com --puppeteer
+# Process a sitemap (automatically detects and processes all URLs)
+bun run snack https://example.com/sitemap.xml
 
-# Customize options
-bun run snack https://example.com --puppeteer --wait=20000 --timeout=60000 --no-cache
+# Process a local sitemap file
+bun run snack ./local-sitemap.xml
+
+# All options work the same way for both single URLs and sitemaps
+bun run snack https://example.com --puppeteer
+bun run snack https://example.com/sitemap.xml --puppeteer
 ```
 
 ## License

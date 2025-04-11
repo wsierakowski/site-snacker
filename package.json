@@ -22,7 +22,8 @@
     "fetch:puppeteer": "bun run scripts/fetch-url.ts --puppeteer",
     "convert": "bun run scripts/convert-url.ts",
     "process": "bun scripts/process-url.ts",
-    "snack": "bun scripts/snack-url.ts"
+    "snack": "bun scripts/snack-url.ts",
+    "merge:processed": "bun run scripts/merge-processed.ts"
   },
   "keywords": [
     "markdown",
@@ -38,6 +39,7 @@
     "@types/sharp": "^0.32.0",
     "axios": "^1.6.7",
     "cheerio": "^1.0.0",
+    "fast-xml-parser": "^5.2.0",
     "js-yaml": "^4.1.0",
     "jsdom": "^26.0.0",
     "mkdirp": "^3.0.1",

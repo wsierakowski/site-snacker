@@ -5,21 +5,24 @@ This document tracks the progress of the Site Snacker project compared to the or
 ## Current Status
 
 ### Completed
-- Set up basic project structure
-- Implemented HTML fetcher module with Axios
-- Created URL utilities module for URL-to-path conversion
-- Implemented file-based caching in tmp directory with URL-based structure
-- Implemented HTML to Markdown converter with table support
-- Implemented content processor module for image processing
+- ✅ Basic project structure
+- ✅ Core modules (fetcher, processor, merger)
+- ✅ CLI interface
+- ✅ Configuration management
+- ✅ Documentation
+- ✅ Orchestrator module
+- ✅ Sitemap support
+- ✅ Image description preservation in merger
 
 ### In Progress
-- Content processor module for audio processing
-- Orchestrator module
+- 🔄 Testing
+- 🔄 Error handling improvements
+- 🔄 Performance optimization
 
 ### Not Started
-- Token monitor module
-- Configuration module
-- Website crawling functionality
+- ⏳ Advanced features (audio, video)
+- ⏳ UI improvements
+- ⏳ Deployment
 
 ## Detailed Changes
 
@@ -202,6 +205,23 @@ This document tracks the progress of the Site Snacker project compared to the or
   - If Cloudflare protection is detected, automatically retries with Puppeteer
   - Uses increased timeouts and wait times for automatic fallback
   - Still allows explicit Puppeteer usage via --puppeteer flag
+- Sitemap support:
+  - Added ability to process XML sitemaps (both remote and local files)
+  - Support for sitemap index files that contain multiple sitemaps
+  - Automatic detection of sitemap URLs and files
+  - Batch processing of all URLs in a sitemap
+  - Detailed progress tracking and cost summary for sitemap processing
+  - Updated CLI to handle both single URLs and sitemaps
+- Enhanced merger module to properly preserve image descriptions:
+  - Added debugging to identify missing image descriptions
+  - Implemented fix to ensure image descriptions are included in merged output
+  - Added verification to confirm image descriptions are preserved
+  - Improved logging to track image description processing
+- Fixed merger to use processed files instead of markdown files:
+  - Now uses the processed files from output/processed directory
+  - These files already contain the image description tags
+  - Ensures image descriptions are preserved in the merged output
+  - Added logging to track which files are being used
 
 ### Fixed
 - Resolved duplicate ProcessorConfig interface definition
@@ -214,6 +234,8 @@ This document tracks the progress of the Site Snacker project compared to the or
 - Fixed issue with directory creation when processing URLs with .html extension
 - Fixed image filename handling to properly use UUIDs from URLs
 - Fixed audio filename handling to match image processing pattern
+- Fixed issue with image descriptions not being preserved in merged markdown files
+- Fixed merger to use processed files that already contain image descriptions
 
 ### Added
 - Implemented audio processing functionality in content processor module
@@ -259,3 +281,36 @@ This document tracks the progress of the Site Snacker project compared to the or
 - Tested fetcher module with example.com and hahment.com URLs
 - Tested Puppeteer-based fetching with Cloudflare-protected sites
 - Verified automatic fallback to Puppeteer when needed
+
+### Added
+- Orchestrator module for coordinating URL processing
+- Sitemap support with progress tracking
+- Support for both remote and local sitemaps
+- Progress display with percentage completion
+- Comprehensive documentation for sitemap usage
+
+### Changed
+- Enhanced merger module to preserve image descriptions
+  - Added debugging and verification steps
+  - Improved logging for image description preservation
+  - Merger now uses processed files from output/processed directory
+  - Image description tags are now included in merged output
+- Fixed duplicate ProcessorConfig interface definitions
+- Fixed image filename handling in processor
+- Fixed audio filename handling in processor
+- Updated documentation with sitemap usage examples
+
+### Fixed
+- Image description preservation in merged output
+- Sitemap URL validation and error handling
+- Progress display formatting
+- Documentation clarity and completeness
+
+### Documentation
+- Added sitemap usage examples to README
+- Added progress output examples
+- Updated CLI documentation with sitemap support
+- Added troubleshooting section for common issues
+- Added examples for different sitemap types
+- Added best practices for large sitemaps
+- Added image description preservation documentation
