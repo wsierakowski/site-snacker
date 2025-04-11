@@ -30,19 +30,21 @@ const costTracker = new CostTracker();
  * @param markdown The markdown content to process
  * @param baseUrl The base URL for resolving relative URLs
  * @param outputDir The directory to save processed files to
+ * @param markdownPath Optional parameter for the markdown file path
  * @returns The processed markdown content and cost summary
  */
 export async function processMarkdownContent(
   markdown: string,
   baseUrl: string,
-  outputDir: string
+  outputDir: string,
+  markdownPath?: string
 ): Promise<{ content: string; costSummary: string }> {
   try {
     // Ensure output directory exists
     ensureDirectoryExists(outputDir);
 
     // Process images
-    const markdownWithProcessedImages = await processImages(markdown, baseUrl, outputDir);
+    const markdownWithProcessedImages = await processImages(markdown, baseUrl, outputDir, markdownPath);
 
     // Process audio
     const markdownWithProcessedAudio = await processAudio(markdownWithProcessedImages, baseUrl, outputDir);

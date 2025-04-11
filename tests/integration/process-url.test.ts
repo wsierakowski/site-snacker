@@ -67,6 +67,31 @@ describe('process-url.ts script integration test', () => {
     const outputContent = fs.readFileSync(outputFilePath, 'utf-8');
     expect(outputContent).toContain('# Example Domain');
     expect(outputContent).toContain('This is a test markdown file with an image');
+
+    // Run the script again to test caching
+    const secondResult = await new Promise<{ exitCode: number; stdout: string; stderr: string }>((resolve) => {
+      let stdout = '';
+      let stderr = '';
+
+      const process = spawn('bun', ['run', 'scripts/process-url.ts', testUrl]);
+
+      process.stdout.on('data', (data) => {
+        stdout += data.toString();
+      });
+
+      process.stderr.on('data', (data) => {
+        stderr += data.toString();
+      });
+
+      process.on('close', (code) => {
+        resolve({ exitCode: code || 0, stdout, stderr });
+      });
+    });
+
+    // Check that the script used cached descriptions
+    expect(secondResult.exitCode).toBe(0);
+    expect(secondResult.stdout).toContain('Using cached description for:');
+    expect(secondResult.stdout).not.toContain('Generating image description...');
   });
 
   test('should handle errors gracefully when markdown file does not exist', async () => {

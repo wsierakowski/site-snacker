@@ -44,7 +44,42 @@ interface ImageContent {
  * @returns A file path based on the URL
  */
 function generateCacheKey(imageUrl: string): string {
-  return urlToFilePath(imageUrl, 'cache');
+  // For Next.js image URLs, extract the original image URL from the query parameter
+  if (imageUrl.includes('/_next/image?url=')) {
+    try {
+      const params = new URL(imageUrl).searchParams;
+      const originalUrl = params.get('url');
+      if (originalUrl) {
+        // Decode the URL-encoded original URL
+        const decodedUrl = decodeURIComponent(originalUrl);
+        const urlObj = new URL(decodedUrl);
+        const pathParts = urlObj.pathname.split('/');
+        // Look for UUID pattern in the path
+        const uuidPart = pathParts.find(part => part.includes('uuid-'));
+        if (uuidPart) {
+          return `${uuidPart}.json`;
+        }
+      }
+    } catch (error) {
+      console.error('Error parsing Next.js image URL:', error);
+    }
+  }
+  
+  // For regular URLs, extract UUID or use basename
+  try {
+    const urlObj = new URL(imageUrl);
+    const pathParts = urlObj.pathname.split('/');
+    // Look for UUID pattern in the path
+    const uuidPart = pathParts.find(part => part.includes('uuid-'));
+    if (uuidPart) {
+      return `${uuidPart}.json`;
+    }
+  } catch (error) {
+    console.error('Error parsing URL:', error);
+  }
+  
+  // Fallback to using the basename if no UUID found
+  return `${path.basename(imageUrl.split('?')[0])}.json`;
 }
 
 /**
@@ -93,12 +128,11 @@ function saveToCache(cacheKey: string, cacheDir: string, description: string, mo
 
 /**
  * Save image description to a markdown file
- * @param imagePath Path to the image file
+ * @param descriptionPath Path to save the description file
  * @param description Generated description
  * @param altText Original alt text
  */
-function saveDescriptionToFile(imagePath: string, description: string, altText: string): void {
-  const descriptionPath = imagePath.replace(/\.[^.]+$/, '.md');
+function saveDescriptionToFile(descriptionPath: string, description: string, altText: string): void {
   const content = `# Image Description\n\n## Original Alt Text\n${altText}\n\n## Generated Description\n${description}\n`;
   fs.writeFileSync(descriptionPath, content);
   console.log('Description saved to:', descriptionPath);
@@ -109,49 +143,83 @@ function saveDescriptionToFile(imagePath: string, description: string, altText: 
  * @param markdown The markdown content to process
  * @param baseUrl The base URL of the original HTML content
  * @param outputDir The directory to save processed content
+ * @param markdownPath Optional parameter for the markdown file path
  * @returns The processed markdown content with image descriptions
  */
 export async function processImages(
   markdown: string,
   baseUrl: string,
-  outputDir: string
+  outputDir: string,
+  markdownPath?: string
 ): Promise<string> {
   // Regular expression to find image markdown syntax: ![alt text](url)
   const imageRegex = /!\[(.*?)\]\((.*?)\)/g;
+  let imageCount = 0;
   
-  // Use the existing tmp directory structure
-  const tmpDir = urlToDirPath(baseUrl);
-  if (!fs.existsSync(tmpDir)) {
-    fs.mkdirSync(tmpDir, { recursive: true });
+  // Get the markdown file directory to use as the base for images and cache
+  const markdownDir = markdownPath 
+    ? path.dirname(markdownPath)
+    : urlToDirPath(baseUrl);
+  
+  // Get the markdown file name without extension to use as subdirectory
+  const markdownName = markdownPath 
+    ? path.basename(markdownPath).replace(/\.[^.]+$/, '')
+    : 'default';
+  
+  // Create page directory if it doesn't exist
+  const pageDir = path.join(markdownDir, markdownName);
+  if (!fs.existsSync(pageDir)) {
+    fs.mkdirSync(pageDir, { recursive: true });
   }
   
-  // Create images subdirectory
-  const imagesDir = path.join(tmpDir, config.image.directory);
-  if (!fs.existsSync(imagesDir)) {
-    fs.mkdirSync(imagesDir, { recursive: true });
-  }
+  console.log('\nStarting image processing...');
+  console.log('Base URL:', baseUrl);
+  console.log('Markdown directory:', markdownDir);
+  console.log('Page directory:', pageDir);
   
   // Process each image
   let processedMarkdown = markdown;
   let match;
   
   while ((match = imageRegex.exec(markdown)) !== null) {
+    imageCount++;
     const [fullMatch, altText, imageUrl] = match;
+    console.log(`\nProcessing image ${imageCount}:`);
+    console.log('Alt text:', altText);
+    console.log('Image URL:', imageUrl);
     
     try {
+      // Resolve relative URLs against the base URL
+      const resolvedImageUrl = imageUrl.startsWith('/') || imageUrl.startsWith('./') || imageUrl.startsWith('../') 
+        ? new URL(imageUrl, baseUrl).toString() 
+        : imageUrl;
+      console.log('Resolved URL:', resolvedImageUrl);
+      
+      // Check cache first
+      const cacheKey = generateCacheKey(resolvedImageUrl);
+      console.log('Cache key:', cacheKey);
+      const cachedData = getCachedDescription(cacheKey, pageDir);
+      
+      if (cachedData && cachedData.model === config.image.model) {
+        console.log('Using cached description from:', path.join(pageDir, cacheKey));
+        const imageWithDescription = `${fullMatch}\n\n<${config.image.markdown.description_tag}>${cachedData.description}</${config.image.markdown.description_tag}>\n\n`;
+        processedMarkdown = processedMarkdown.replace(fullMatch, imageWithDescription);
+        continue;
+      }
+
       let imageBuffer: Buffer;
       let contentType: string | undefined;
       let originalUrl: string | undefined;
       
-      if (imageUrl.startsWith('file://')) {
+      if (resolvedImageUrl.startsWith('file://')) {
         // For local files, read directly from the filesystem
-        const localPath = imageUrl.replace('file://', '');
+        const localPath = resolvedImageUrl.replace('file://', '');
         imageBuffer = fs.readFileSync(localPath);
         contentType = 'image/png'; // Default for local files
       } else {
         // For remote files, download using the utility
-        console.log('Downloading image...');
-        const result = await downloadFile(imageUrl, baseUrl, {
+        console.log('Downloading image from:', resolvedImageUrl);
+        const result = await downloadFile(resolvedImageUrl, baseUrl, {
           headers: {
             'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
             'Sec-Fetch-Dest': 'image',
@@ -160,29 +228,41 @@ export async function processImages(
         imageBuffer = result.buffer;
         contentType = result.contentType;
         originalUrl = result.originalUrl;
+        console.log('Download successful. Content type:', contentType);
+        if (originalUrl) console.log('Original URL:', originalUrl);
       }
       
-      // Extract file name and extension from the URL
+      // Extract UUID from the URL
       let imageFileName: string;
       
       if (originalUrl) {
-        // If we have an original URL (from Next.js image URL), use that for the filename
-        const originalUrlObj = new URL(originalUrl);
-        imageFileName = path.basename(originalUrlObj.pathname);
+        // Extract UUID from the original URL
+        const uuidMatch = originalUrl.match(/uuid-[a-f0-9-]+/i);
+        if (uuidMatch) {
+          imageFileName = uuidMatch[0] + '.png';
+          console.log('Using UUID from original URL:', imageFileName);
+        } else {
+          // If no UUID found, use a timestamp-based unique name
+          imageFileName = `image-${Date.now()}.png`;
+          console.log('No UUID found in original URL, using timestamp:', imageFileName);
+        }
       } else {
-        // For direct URLs, use the basename
-        const urlObj = new URL(imageUrl, baseUrl);
-        imageFileName = path.basename(urlObj.pathname.split('?')[0]);
+        // For direct URLs, try to extract UUID
+        const uuidMatch = resolvedImageUrl.match(/uuid-[a-f0-9-]+/i);
+        if (uuidMatch) {
+          imageFileName = uuidMatch[0] + '.png';
+          console.log('Using UUID from URL:', imageFileName);
+        } else {
+          // If no UUID found, use a timestamp-based unique name
+          imageFileName = `image-${Date.now()}.png`;
+          console.log('No UUID found in URL, using timestamp:', imageFileName);
+        }
       }
       
-      // If no extension, try to get it from content type or default to .png
-      if (!path.extname(imageFileName)) {
-        const ext = contentType ? `.${contentType.split('/')[1]}` : '.png';
-        imageFileName += ext;
-      }
+      console.log('Final image file name:', imageFileName);
       
-      // Save the image to the images directory
-      const imagePath = path.join(imagesDir, imageFileName);
+      // Save the image directly in the page directory
+      const imagePath = path.join(pageDir, imageFileName);
       fs.writeFileSync(imagePath, imageBuffer);
       console.log('Image saved to:', imagePath);
       
@@ -192,25 +272,32 @@ export async function processImages(
         const description = await generateImageDescription(imagePath, altText, contentType);
         const imageWithDescription = `${fullMatch}\n\n<${config.image.markdown.description_tag}>${description}</${config.image.markdown.description_tag}>\n\n`;
         processedMarkdown = processedMarkdown.replace(fullMatch, imageWithDescription);
-        // Save description to a separate file
-        saveDescriptionToFile(imagePath, description, altText);
-        console.log('Description generated successfully');
+        
+        // Save description to cache in the page directory
+        saveToCache(cacheKey, pageDir, description, config.image.model);
+        
+        // Save description to a separate file in the page directory
+        const descriptionPath = path.join(pageDir, imageFileName.replace(/\.[^.]+$/, '.md'));
+        saveDescriptionToFile(descriptionPath, description, altText);
+        console.log('Description generated and cached successfully');
       } catch (aiError: any) {
         console.error('Error generating image description:', aiError.message);
         // Add a note about the failed AI description but keep the image
-        const errorNote = `\n\n> ${config.image.markdown.error_prefix} Image description failed: ${aiError.message}\n\n`;
-        processedMarkdown = processedMarkdown.replace(fullMatch, `${fullMatch}${errorNote}`);
+        const errorNote = `${fullMatch}\n\n<${config.image.markdown.description_tag}>Error generating description: ${aiError.message}</${config.image.markdown.description_tag}>\n\n`;
+        processedMarkdown = processedMarkdown.replace(fullMatch, errorNote);
       }
-      
-      console.log('Image processing completed successfully\n');
     } catch (error: any) {
-      console.error('Error processing image:', error.message);
-      // Add a note in the markdown about the failed processing
-      const errorNote = `\n\n> ${config.image.markdown.error_prefix} Failed to process image: ${error.message}\n\n`;
-      processedMarkdown = processedMarkdown.replace(fullMatch, `${fullMatch}${errorNote}`);
+      console.error(`Error processing image ${imageCount}:`, error.message);
+      if (error.response) {
+        console.error('Response status:', error.response.status);
+        console.error('Response data:', error.response.data);
+      }
+      // Keep the original image markdown if processing fails
+      continue;
     }
   }
   
+  console.log(`\nProcessing completed. Total images found: ${imageCount}`);
   return processedMarkdown;
 }
 
@@ -222,6 +309,12 @@ export async function processImages(
  * @returns A description of the image
  */
 async function generateImageDescription(imagePath: string, altText: string, contentType: string = 'image/png'): Promise<string> {
+  // TEMPORARY: Skip OpenAI API calls during development
+  console.log('Skipping OpenAI API call during development');
+  return `[DEBUG] Image description skipped. Alt text: ${altText}`;
+
+  // Original code commented out
+  /*
   try {
     // Read the image file
     const imageBuffer = fs.readFileSync(imagePath);
@@ -273,4 +366,5 @@ async function generateImageDescription(imagePath: string, altText: string, cont
     // Re-throw the error with more context
     throw new Error(`OpenAI API error: ${error.message}`);
   }
+  */
 } 

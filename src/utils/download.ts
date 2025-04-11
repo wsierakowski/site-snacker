@@ -20,17 +20,56 @@ interface DownloadResult {
  * @returns The downloaded file as a buffer and associated metadata
  */
 export async function downloadFile(url: string, baseUrl: string, options: DownloadOptions = {}): Promise<DownloadResult> {
-  // Resolve relative URLs
-  const absoluteUrl = new URL(url, baseUrl).toString();
-  console.log('\nDownloading from:', absoluteUrl);
+  console.log('\nDownload request:');
+  console.log('Input URL:', url);
+  console.log('Base URL:', baseUrl);
 
-  // Handle Next.js image URLs
-  const originalUrl = absoluteUrl.includes('_next/image?url=')
-    ? decodeURIComponent(new URL(absoluteUrl).searchParams.get('url') || absoluteUrl)
-    : absoluteUrl;
+  // For Next.js image URLs, extract the original URL from the query parameter
+  let urlToDownload = url;
+  let originalUrl = url;
+
+  if (url.includes('/_next/image?url=')) {
+    try {
+      // First resolve relative URL if needed
+      console.log('Detected Next.js image URL');
+      const resolvedUrl = new URL(url, baseUrl).toString();
+      console.log('Resolved URL:', resolvedUrl);
+      
+      const params = new URL(resolvedUrl).searchParams;
+      const encodedUrl = params.get('url');
+      console.log('Encoded URL from params:', encodedUrl);
+      
+      if (encodedUrl) {
+        originalUrl = decodeURIComponent(encodedUrl);
+        urlToDownload = originalUrl;
+        console.log('Decoded original URL:', originalUrl);
+      } else {
+        console.log('No URL parameter found in Next.js image URL');
+      }
+    } catch (error) {
+      console.error('Error parsing Next.js image URL:', error);
+      throw error;
+    }
+  } else {
+    // For non-Next.js URLs, resolve relative URLs
+    try {
+      console.log('Regular URL, resolving against base URL');
+      urlToDownload = new URL(url, baseUrl).toString();
+      originalUrl = urlToDownload;
+      console.log('Resolved URL:', urlToDownload);
+    } catch (error) {
+      console.error('Error resolving URL:', error);
+      throw error;
+    }
+  }
+
+  console.log('\nFinal download configuration:');
+  console.log('URL to download:', urlToDownload);
+  console.log('Original URL:', originalUrl);
 
   try {
-    const response = await axios.get(originalUrl, {
+    console.log('\nStarting download...');
+    const response = await axios.get(urlToDownload, {
       responseType: 'arraybuffer',
       headers: {
         'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
@@ -49,7 +88,13 @@ export async function downloadFile(url: string, baseUrl: string, options: Downlo
         ...options.headers,
       },
       validateStatus: options.validateStatus ?? null,
+      maxRedirects: 5,
     });
+
+    console.log('Download successful');
+    console.log('Response status:', response.status);
+    console.log('Content type:', response.headers['content-type']);
+    console.log('Content length:', response.headers['content-length']);
 
     if (response.status !== 200) {
       console.error('Response Status:', response.status);
@@ -71,7 +116,7 @@ export async function downloadFile(url: string, baseUrl: string, options: Downlo
         }
       }
       console.error('Response Preview:', responsePreview);
-      console.error('Attempted URL:', originalUrl);
+      console.error('Attempted URL:', urlToDownload);
       
       throw new Error(`Failed to download file (HTTP ${response.status})`);
     }
@@ -79,14 +124,14 @@ export async function downloadFile(url: string, baseUrl: string, options: Downlo
     return {
       buffer: Buffer.from(response.data),
       contentType: response.headers['content-type'],
-      originalUrl: originalUrl !== absoluteUrl ? originalUrl : undefined
+      originalUrl: originalUrl !== urlToDownload ? originalUrl : undefined
     };
   } catch (error: any) {
-    console.error('Error downloading file:', error.message);
+    console.error('\nDownload error:', error.message);
     if (error.response) {
       console.error('Response Status:', error.response.status);
       console.error('Response Headers:', JSON.stringify(error.response.headers, null, 2));
-      console.error('Attempted URL:', originalUrl);
+      console.error('Attempted URL:', urlToDownload);
       
       // Try to get the first 100 chars of the response data
       let responsePreview = '';

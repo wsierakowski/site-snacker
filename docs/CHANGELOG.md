@@ -157,12 +157,29 @@ This document tracks the progress of the Site Snacker project compared to the or
 - Added integration tests for convert-url.ts script
 - Added integration tests for process-url.ts script
 - Added new test scripts to package.json for running script integration tests
+- Image processing caching mechanism to avoid redundant processing of the same images
+- Cache directory structure for storing image descriptions
+- Cache validation based on the OpenAI model version
+- Test cases to verify caching functionality
+- Updated image processing to check cache before generating new descriptions
+- Improved error handling in image processing to maintain original markdown on failure
+- Enhanced logging to indicate when cached descriptions are being used
+- Added support for relative image URLs in Next.js and other frameworks
+- Modified audio file processing to match image handling pattern:
+  - Audio files are now stored directly in the page directory
+  - Using UUIDs from URLs when available
+  - Saving transcriptions in MD files alongside audio files
+  - Cache files are stored in the same directory
+  - Improved error handling and logging
 
 ### Fixed
 - Resolved duplicate ProcessorConfig interface definition
 - Fixed mkdirp import to use named import
 - Corrected OpenAI API types in image processor
 - Removed duplicate function declarations in processor/index.ts
+- Fixed issue with processing relative image URLs (like those from Next.js)
+- Improved URL resolution for images with relative paths
+- Fixed image cache file extensions to use .json instead of .html
 
 ### Added
 - Implemented audio processing functionality in content processor module

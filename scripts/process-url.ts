@@ -7,25 +7,35 @@ import { urlToFilePath } from '../src/utils/url.js';
 
 /**
  * Script to process cached markdown content for images and audio
- * Usage: bun process-url.ts <url>
+ * Usage: bun process-url.ts <url_or_file>
  */
 async function main() {
-  const url = process.argv[2];
-  if (!url) {
-    console.error('Please provide a URL to process');
+  const input = process.argv[2];
+  if (!input) {
+    console.error('Please provide a URL or file path to process');
     process.exit(1);
   }
 
   try {
-    // First convert URL to file path, then replace .html with .md
-    const markdownPath = urlToFilePath(url).replace(/\.html$/, '.md');
+    let markdownPath: string;
+    let baseUrl: string;
+
+    // Check if input is a local file path
+    if (fs.existsSync(input)) {
+      markdownPath = input;
+      // For local files, use a dummy base URL that matches the file structure
+      baseUrl = 'https://' + path.dirname(input).replace(/^tmp\//, '');
+    } else {
+      // Treat input as URL
+      markdownPath = urlToFilePath(input).replace(/\.html$/, '.md');
+      baseUrl = input.replace(/\.html$/, '');
+    }
     
     if (!fs.existsSync(markdownPath)) {
-      console.error(`No markdown file found in cache for URL: ${url}`);
-      console.error(`Expected path: ${markdownPath}`);
+      console.error(`No markdown file found at: ${markdownPath}`);
       console.error('\nPlease make sure to:');
-      console.error('1. Run the converter first: bun run convert ' + url);
-      console.error('2. Check if the URL is correct');
+      console.error('1. Run the converter first: bun run convert ' + input);
+      console.error('2. Check if the path/URL is correct');
       console.error('3. Verify that the markdown file exists in the tmp directory');
       process.exit(1);
     }
@@ -39,9 +49,7 @@ async function main() {
 
     // Process the markdown content
     console.log('Processing markdown for images and audio...');
-    // Remove .html for the base URL used in processing
-    const baseUrl = url.replace(/\.html$/, '');
-    const { content: processedMarkdown, costSummary } = await processMarkdownContent(markdown, baseUrl, outputDir);
+    const { content: processedMarkdown, costSummary } = await processMarkdownContent(markdown, baseUrl, outputDir, markdownPath);
 
     // Save processed markdown
     const processedPath = path.join(outputDir, path.basename(markdownPath));
@@ -52,7 +60,7 @@ async function main() {
     
     // Display cost summary
     console.log(costSummary);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error:', error.message);
     if (error.response) {
       console.error('Response status:', error.response.status);
