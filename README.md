@@ -1,6 +1,6 @@
 # Site Snacker
 
-![Site Snacker](docs/site_snacker_logo_hz_sm.png)
+![Site Snacker](docs/site_snacker_logo_hz.png)
 
 The script snacks on websites and spits out tasty Markdown.
 
@@ -10,7 +10,7 @@ Site Snacker is a powerful tool that transforms web content into clean, accessib
 
 - **Smart Content Extraction**: Uses reader mode to focus on what matters - main content, headings, and relevant sections while excluding navigation menus, sidebars, ads, and other distractions
 - **AI-Powered Enhancements** (using OpenAI):
-  - Automatically describes images, screenshots, and diagrams using GPT-4 Vision
+  - Automatically describes images, screenshots, and diagrams using multimodal AI
   - Transcribes audio content using Whisper API when present in the page
 - **Flexible Processing**:
   - Process a single webpage for quick documentation
@@ -32,7 +32,36 @@ Built with TypeScript and Bun for optimal performance and developer experience.
 
 - [Bun](https://bun.sh/) installed on your system
 - Node.js (optional, but recommended for development tools)
-- OpenAI API key (for GPT-4 Vision and Whisper API)
+- OpenAI API key (for image descriptions and audio transcription)
+
+## Configuration
+
+Site Snacker uses a centralized configuration system through `site-snacker.config.yml`. This file contains all configurable settings for the application, including:
+
+- OpenAI API settings:
+  - Model configurations (gpt-4o, gpt-4o-mini, whisper-1)
+  - Pricing information for cost tracking
+  - API key configuration
+- Module-specific configurations:
+  - Processor settings for image and audio processing
+  - Fetcher settings for HTTP requests and Cloudflare handling
+  - Converter settings for markdown generation
+  - Merger settings for file combination
+- Directory paths for output and temporary files
+- Sitemap processing options
+- Cost tracking settings with configurable thresholds
+
+The configuration is automatically loaded when the application starts, and all modules access their settings through the centralized configuration system. This ensures consistency across the application and makes it easy to modify settings in one place.
+
+You can customize any of these settings by editing the `site-snacker.config.yml` file. For detailed configuration options, see [Implementation Details](docs/IMPLEMENTATION.md).
+
+### Environment Variables
+
+Some sensitive settings (like API keys) are loaded from environment variables. Create a `.env` file in the project root with:
+
+```bash
+OPENAI_API_KEY=your_api_key_here
+```
 
 ## Installation
 
@@ -153,8 +182,9 @@ The processed content will be available in the `output` directory:
 ```
 output/
 ├── processed/           # Individual processed files
-│   ├── page1.md        # Markdown with image descriptions
-│   └── page2.md        # and audio transcriptions
+│   ├── [domain]/       # Organized by domain
+│   │   ├── page1.md    # Markdown with image descriptions
+│   │   └── page2.md    # and audio transcriptions
 └── merged/             # Combined documentation
     └── sitemap.md      # All pages merged into one file
 ```
@@ -203,6 +233,37 @@ bun run merge:processed output/merged/custom-merge.md output/processed/sitecore-
 ```
 
 This is particularly useful when you need to ensure that image descriptions are properly preserved in the merged output.
+
+### Handling Failed URLs and Caching
+
+The script implements a smart caching and retry system:
+
+- **Successful URLs**: 
+  - Content is cached in the `tmp` directory
+  - On subsequent runs, cached content is used
+  - No re-fetching of already processed URLs
+  
+- **Failed URLs**:
+  - Only failed URLs are retried on subsequent runs
+  - Successfully processed URLs are skipped (using cache)
+  - You can retry a specific failed URL:
+    ```bash
+    # Retry a specific URL
+    bun run snack https://example.com/failed-page.html
+    
+    # Increase timeout for challenging URLs
+    bun run snack https://example.com/failed-page.html --timeout=120000
+    ```
+
+- **Automatic Remerging**:
+  - When retrying a failed sitemap URL, if successful:
+    - A new merged markdown file is automatically created
+    - Includes all previously successful pages (from cache)
+    - Includes the newly successful page
+    - Maintains the original order and formatting
+  - No need to manually remerge after retrying failed URLs
+
+This ensures efficient processing of large sitemaps, as only problematic URLs need to be retried.
 
 ## Usage
 

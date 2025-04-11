@@ -1,5 +1,9 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { getDirectoryConfig } from '../config';
+
+// Get configuration
+const dirConfig = getDirectoryConfig();
 
 interface FileToMerge {
   markdownPath: string;
@@ -60,7 +64,12 @@ export async function mergeMarkdownFiles(
     
     // IMPORTANT: Use the processed file instead of the markdown file
     // The processed file already contains the image descriptions
-    const processedPath = path.join('output', 'processed', path.basename(path.dirname(file.markdownPath)), path.basename(file.markdownPath));
+    const processedPath = path.join(
+      dirConfig.output.base,
+      dirConfig.output.processed,
+      path.basename(path.dirname(file.markdownPath)),
+      path.basename(file.markdownPath)
+    );
     
     if (fs.existsSync(processedPath)) {
       console.log(`  - Using processed file: ${processedPath}`);

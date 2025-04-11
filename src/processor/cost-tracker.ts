@@ -1,15 +1,22 @@
 import { ChatCompletion } from 'openai/resources';
+import { getOpenAIConfig } from '../config';
+
+// Get pricing from configuration
+const config = getOpenAIConfig();
+const PRICING = config.pricing;
+
+type ModelPricing = typeof PRICING;
+type ModelName = keyof ModelPricing;
 
 interface CostMetrics {
-  model: string;
-  tokens?: {
-    prompt: number;
-    completion: number;
-    total: number;
+  timestamp: number;
+  cost: number;
+  details: {
+    promptTokens?: number;
+    completionTokens?: number;
+    imageCount?: number;
+    durationInSeconds?: number;
   };
-  images?: number;
-  audioSeconds?: number;
-  estimatedCost: number;
 }
 
 interface ProcessingMetrics {
@@ -18,70 +25,70 @@ interface ProcessingMetrics {
   totalCost: number;
 }
 
-// Current pricing as of March 2024 (in USD)
-const PRICING = {
-  'gpt-4-vision-preview': {
-    input: 0.01,    // per 1K tokens
-    output: 0.03,   // per 1K tokens
-    image: 0.00765  // per image
-  },
-  'whisper-1': {
-    perMinute: 0.006  // $0.006 per minute
-  },
-  'gpt-4o-mini': {
-    perToken: 0.00001,  // $0.01 per 1K tokens
-    perImage: 0.00765,  // $0.00765 per image
-  }
-} as const;
-
 export class CostTracker {
-  private metrics: ProcessingMetrics = {
-    images: [],
-    audio: [],
-    totalCost: 0
-  };
+  private visionCosts: CostMetrics[] = [];
+  private audioCosts: CostMetrics[] = [];
 
-  /**
-   * Track cost for a vision API call
-   */
-  trackVisionAPI(response: ChatCompletion, imageCount: number = 1): void {
-    const usage = response.usage;
-    if (!usage) return;
-
-    const metrics: CostMetrics = {
-      model: response.model,
-      tokens: {
-        prompt: usage.prompt_tokens,
-        completion: usage.completion_tokens,
-        total: usage.total_tokens
-      },
-      images: imageCount,
-      estimatedCost: this.calculateVisionCost(usage.prompt_tokens, usage.completion_tokens, imageCount)
-    };
-
-    this.metrics.images.push(metrics);
-    this.metrics.totalCost += metrics.estimatedCost;
+  constructor() {
+    // Initialize cost tracking
   }
 
   /**
-   * Track cost for an audio API call
+   * Track the cost of a Vision API call
    */
-  trackAudioAPI(model: string, durationInSeconds: number): void {
-    const metrics: CostMetrics = {
-      model,
-      audioSeconds: durationInSeconds,
-      estimatedCost: this.calculateAudioCost(durationInSeconds)
-    };
-
-    this.metrics.audio.push(metrics);
-    this.metrics.totalCost += metrics.estimatedCost;
+  public trackVisionAPI(promptTokens: number, completionTokens: number, imageCount: number): void {
+    const cost = this.calculateVisionCost(promptTokens, completionTokens, imageCount);
+    this.visionCosts.push({
+      timestamp: Date.now(),
+      cost,
+      details: {
+        promptTokens,
+        completionTokens,
+        imageCount
+      }
+    });
   }
 
   /**
-   * Calculate cost for vision API usage
+   * Track the cost of an audio transcription
+   */
+  public trackAudioAPI(durationInSeconds: number): void {
+    const cost = this.calculateAudioCost(durationInSeconds);
+    this.audioCosts.push({
+      timestamp: Date.now(),
+      cost,
+      details: {
+        durationInSeconds
+      }
+    });
+  }
+
+  /**
+   * Get a summary of all costs
+   */
+  public getSummary(): string {
+    const totalVisionCost = this.visionCosts.reduce((sum, cost) => sum + cost.cost, 0);
+    const totalAudioCost = this.audioCosts.reduce((sum, cost) => sum + cost.cost, 0);
+    const totalCost = totalVisionCost + totalAudioCost;
+
+    const summary = [
+      '\nCost Summary:',
+      '-------------',
+      `Vision API Calls: $${totalVisionCost.toFixed(4)}`,
+      `Audio API Calls:  $${totalAudioCost.toFixed(4)}`,
+      `Total Cost:       $${totalCost.toFixed(4)}`,
+      ''
+    ].join('\n');
+
+    return summary;
+  }
+
+  /**
+   * Calculate the cost of a Vision API call
    */
   private calculateVisionCost(promptTokens: number, completionTokens: number, imageCount: number): number {
-    const pricing = PRICING['gpt-4-vision-preview'];
+    const model = 'gpt-4-vision-preview' as const;
+    const pricing = PRICING[model];
     const inputCost = (promptTokens / 1000) * pricing.input;
     const outputCost = (completionTokens / 1000) * pricing.output;
     const imageCost = imageCount * pricing.image;
@@ -89,55 +96,19 @@ export class CostTracker {
   }
 
   /**
-   * Calculate cost for audio API usage
+   * Calculate the cost of an audio transcription
    */
   private calculateAudioCost(durationInSeconds: number): number {
     const durationInMinutes = durationInSeconds / 60;
-    return durationInMinutes * PRICING['whisper-1'].perMinute;
-  }
-
-  /**
-   * Get the summary of all API costs
-   */
-  getSummary(): string {
-    let summary = '\nOpenAI API Usage Summary:\n';
-    summary += '------------------------\n\n';
-
-    if (this.metrics.images.length > 0) {
-      summary += 'Image Processing:\n';
-      this.metrics.images.forEach((m, i) => {
-        summary += `  Image #${i + 1}:\n`;
-        summary += `    Model: ${m.model}\n`;
-        if (m.tokens) {
-          summary += `    Tokens: ${m.tokens.total} (${m.tokens.prompt} prompt, ${m.tokens.completion} completion)\n`;
-        }
-        summary += `    Cost: $${m.estimatedCost.toFixed(4)}\n`;
-      });
-    }
-
-    if (this.metrics.audio.length > 0) {
-      summary += '\nAudio Processing:\n';
-      this.metrics.audio.forEach((m, i) => {
-        summary += `  Audio #${i + 1}:\n`;
-        summary += `    Model: ${m.model}\n`;
-        if (m.audioSeconds) {
-          summary += `    Duration: ${m.audioSeconds.toFixed(1)} seconds\n`;
-        }
-        summary += `    Cost: $${m.estimatedCost.toFixed(4)}\n`;
-      });
-    }
-
-    summary += '\nTotal Estimated Cost: $' + this.metrics.totalCost.toFixed(4) + '\n';
-    return summary;
+    const model = 'whisper-1' as const;
+    return durationInMinutes * PRICING[model].per_minute;
   }
 }
 
-export function calculateImageCost(response: ChatCompletion): number {
-  const pricing = PRICING['gpt-4o-mini'];
-  const tokens = response.usage?.total_tokens || 0;
-  return tokens * pricing.perToken;
-}
-
+/**
+ * Calculate the cost of an audio transcription
+ */
 export function calculateAudioCost(durationInMinutes: number): number {
-  return durationInMinutes * PRICING['whisper-1'].perMinute;
+  const model = 'whisper-1' as const;
+  return durationInMinutes * PRICING[model].per_minute;
 } 

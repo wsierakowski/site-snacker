@@ -3,14 +3,13 @@ import * as path from 'path';
 import axios from 'axios';
 import OpenAI from 'openai';
 import { urlToFilePath, urlToDirPath } from '../utils/url.js';
-import * as yaml from 'js-yaml';
-import { ProcessorConfig } from './types.js';
 import { TranscriptionCreateParams } from 'openai/resources/audio/transcriptions';
-import { openai as globalOpenai, config as globalConfig, costTracker } from './index.js';
 import { downloadFile } from '../utils/download.js';
+import { getProcessorConfig } from '../config';
+import { CostTracker } from './cost-tracker';
 
-// Load configuration
-const config = yaml.load(fs.readFileSync(path.join(__dirname, 'processor.conf.yml'), 'utf8')) as ProcessorConfig;
+// Get configuration from the centralized config
+const config = getProcessorConfig().audio;
 
 // Initialize OpenAI client
 if (!process.env.OPENAI_API_KEY) {
@@ -20,6 +19,9 @@ if (!process.env.OPENAI_API_KEY) {
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
+
+// Initialize cost tracker
+const costTracker = new CostTracker();
 
 /**
  * Process audio in markdown content
@@ -87,9 +89,9 @@ export async function processAudio(
         const cacheKey = audioFileName + '.json';
         const cachedData = getCachedTranscription(cacheKey, pageDir);
         
-        if (cachedData && cachedData.model === config.audio.model) {
+        if (cachedData && cachedData.model === config.model) {
           console.log('Using cached transcription from:', path.join(pageDir, cacheKey));
-          const audioWithTranscription = `${fullMatch}\n\n<${config.audio.markdown.transcript_tag}>${cachedData.transcription}</${config.audio.markdown.transcript_tag}>\n\n`;
+          const audioWithTranscription = `${fullMatch}\n\n<${config.markdown.transcript_tag}>${cachedData.transcription}</${config.markdown.transcript_tag}>\n\n`;
           processedMarkdown = processedMarkdown.replace(fullMatch, audioWithTranscription);
           continue;
         }
@@ -112,11 +114,11 @@ export async function processAudio(
         console.log('Generating audio transcription...');
         try {
           const transcription = await generateAudioTranscription(audioPath, linkText);
-          const audioWithTranscription = `${fullMatch}\n\n<${config.audio.markdown.transcript_tag}>${transcription}</${config.audio.markdown.transcript_tag}>\n\n`;
+          const audioWithTranscription = `${fullMatch}\n\n<${config.markdown.transcript_tag}>${transcription}</${config.markdown.transcript_tag}>\n\n`;
           processedMarkdown = processedMarkdown.replace(fullMatch, audioWithTranscription);
           
           // Save transcription to cache in the page directory
-          saveTranscriptionToCache(cacheKey, pageDir, transcription, config.audio.model);
+          saveTranscriptionToCache(cacheKey, pageDir, transcription, config.model);
           
           // Save transcription to a separate file in the page directory
           const transcriptionPath = path.join(pageDir, audioFileName.replace(/\.[^.]+$/, '.md'));
@@ -125,7 +127,7 @@ export async function processAudio(
         } catch (aiError: any) {
           console.error('Error generating audio transcription:', aiError.message);
           // Add a note about the failed AI transcription but keep the audio
-          const errorNote = `${fullMatch}\n\n<${config.audio.markdown.transcript_tag}>Error generating transcription: ${aiError.message}</${config.audio.markdown.transcript_tag}>\n\n`;
+          const errorNote = `${fullMatch}\n\n<${config.markdown.transcript_tag}>Error generating transcription: ${aiError.message}</${config.markdown.transcript_tag}>\n\n`;
           processedMarkdown = processedMarkdown.replace(fullMatch, errorNote);
         }
       } catch (error: any) {
@@ -200,27 +202,16 @@ function saveTranscriptionToCache(cacheKey: string, pageDir: string, transcripti
  * @returns A transcription of the audio
  */
 async function generateAudioTranscription(audioPath: string, linkText: string): Promise<string> {
-  try {
-    // Get audio duration in seconds
-    const { duration } = await getAudioDuration(audioPath);
-    
-    // Call OpenAI's API to transcribe the audio
-    const response = await openai.audio.transcriptions.create({
-      file: fs.createReadStream(audioPath),
-      model: config.audio.model,
-      language: config.audio.language,
-      response_format: config.audio.response_format as "json" | "text" | "srt" | "verbose_json" | "vtt"
-    });
-
-    // Track the API cost
-    costTracker.trackAudioAPI(config.audio.model, duration);
-    
-    // Convert response to string if it's not already a string
-    return typeof response === 'string' ? response : JSON.stringify(response);
-  } catch (error) {
-    console.error("Error generating audio transcription:", error);
-    return `[Error generating transcription for audio: ${linkText}]`;
-  }
+  console.log('Calling OpenAI Whisper API...');
+  const transcription = await openai.audio.transcriptions.create({
+    file: fs.createReadStream(audioPath),
+    model: config.model,
+    language: config.language,
+    response_format: config.response_format as "json" | "text" | "srt" | "verbose_json" | "vtt"
+  });
+  
+  // Convert response to string if it's not already a string
+  return typeof transcription === 'string' ? transcription : JSON.stringify(transcription);
 }
 
 /**

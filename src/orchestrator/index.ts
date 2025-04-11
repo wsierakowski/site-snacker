@@ -6,6 +6,12 @@ import { parseSitemap, isSitemapSource } from '../sitemap/index.js';
 import { mergeMarkdownFiles } from '../merger/index.js';
 import * as fs from 'fs';
 import * as path from 'path';
+import { getDirectoryConfig, getFetcherConfig, getSitemapConfig } from '../config';
+
+// Get configuration
+const dirConfig = getDirectoryConfig();
+const fetcherConfig = getFetcherConfig();
+const sitemapConfig = getSitemapConfig();
 
 export interface OrchestrationResult {
   htmlPath: string;
@@ -91,7 +97,11 @@ export async function orchestrate(
           url: r.url
         }));
         const sitemapName = path.basename(url, path.extname(url));
-        mergedMarkdownPath = path.join('output', 'merged', `${sitemapName}-merged.md`);
+        mergedMarkdownPath = path.join(
+          dirConfig.output.base,
+          dirConfig.output.merged,
+          `${sitemapName}-merged.md`
+        );
         await mergeMarkdownFiles(filesToMerge, mergedMarkdownPath, url);
       }
       
@@ -135,15 +145,15 @@ async function processUrl(
     console.log('Using Puppeteer for fetching (explicitly requested)...');
     html = await fetchWithPuppeteer(url, {
       useCache: options.useCache,
-      waitTime: options.waitTime,
-      timeout: options.timeout
+      waitTime: options.waitTime || fetcherConfig.cloudflare.wait_time,
+      timeout: options.timeout || fetcherConfig.cloudflare.timeout
     });
   } else {
     try {
       console.log('Attempting standard fetch first...');
       html = await fetchHtml(url, options.useCache, {
-        timeout: options.timeout,
-        useCloudflareHeaders: true
+        timeout: options.timeout || fetcherConfig.cloudflare.timeout,
+        useCloudflareHeaders: fetcherConfig.cloudflare.auto_detect
       });
     } catch (error: any) {
       // Check if the error message suggests Cloudflare protection
@@ -155,8 +165,8 @@ async function processUrl(
         console.log('\nCloudflare protection detected, falling back to Puppeteer...');
         html = await fetchWithPuppeteer(url, {
           useCache: options.useCache,
-          waitTime: options.waitTime || 20000, // Use longer wait time for automatic fallback
-          timeout: options.timeout || 60000 // Use longer timeout for automatic fallback
+          waitTime: options.waitTime || fetcherConfig.cloudflare.wait_time,
+          timeout: options.timeout || fetcherConfig.cloudflare.timeout
         });
       } else {
         // If it's not a Cloudflare issue, rethrow the error
@@ -168,7 +178,12 @@ async function processUrl(
   // Get file paths
   const htmlPath = urlToFilePath(url);
   const markdownPath = htmlPath.replace(/\.html$/, '.md');
-  const processedPath = path.join('output', 'processed', path.basename(path.dirname(markdownPath)), path.basename(markdownPath));
+  const processedPath = path.join(
+    dirConfig.output.base,
+    dirConfig.output.processed,
+    path.basename(path.dirname(markdownPath)),
+    path.basename(markdownPath)
+  );
 
   // Ensure directories exist
   const htmlDir = path.dirname(htmlPath);

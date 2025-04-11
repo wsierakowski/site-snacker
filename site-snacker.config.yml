@@ -1,0 +1,85 @@
+# Site Snacker Configuration
+
+# OpenAI API Configuration
+openai:
+  # API key is read from .env file
+  pricing:
+    gpt-4o:
+      input: 0.005   # $5 per 1M input tokens ($0.005 per 1K tokens)
+      output: 0.015  # $15 per 1M output tokens ($0.015 per 1K tokens)
+    gpt-4o-mini:
+      input: 0.00015 # $0.15 per 1M input tokens ($0.00015 per 1K tokens)
+      output: 0.0006 # $0.60 per 1M output tokens ($0.0006 per 1K tokens)
+    whisper-1:
+      per_minute: 0.006  # $0.006 per minute of audio
+
+# Processor Module Configuration
+processor:
+  # Image Processing Configuration
+  image:
+    model: "gpt-4o-mini"  # Using gpt-4o-mini for image processing
+    max_tokens: 500
+    prompt: "Describe this image in detail. If it's a UI screenshot, describe the interface elements. If it's a diagram, represent it as a mermaid, websequence, puml or ascii diagram, use ASCII or markdown to explain what it represents. Alt text: {altText}"
+    markdown:
+      description_tag: "image_description"  # Will be wrapped in < >
+      error_prefix: "⚠️"
+    directory: "images"  # Subdirectory for downloaded images
+
+  # Audio Processing Configuration
+  audio:
+    model: "whisper-1"  # Using Whisper for audio processing
+    language: "en"
+    response_format: "text"
+    markdown:
+      transcript_tag: "audio_transcript"  # Will be wrapped in < >
+      error_prefix: "⚠️"
+    directory: "audio"  # Subdirectory for downloaded audio
+
+# Fetcher Module Configuration
+fetcher:
+  cloudflare:
+    wait_time: 15000      # Default wait time for Cloudflare challenge (ms)
+    timeout: 60000        # Default timeout for page load (ms)
+    auto_detect: true     # Automatically detect and handle Cloudflare protection
+  puppeteer:
+    viewport:
+      width: 1920
+      height: 1080
+    user_agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+    headers:
+      accept_language: "en-US,en;q=0.9"
+      accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8"
+  cache:
+    enabled: true        # Enable caching of fetched content
+    skip_domains: []     # List of domains to skip caching for
+
+# Converter Module Configuration
+converter:
+  readability:
+    use_reader_mode: true  # Use Mozilla's Readability for content extraction
+  markdown:
+    preserve_tables: true  # Special handling for HTML tables
+    preserve_links: true   # Keep original URLs in links
+    preserve_images: true  # Keep image references
+
+# Directory Configuration
+directories:
+  base: "."              # Base directory for all operations
+  output:
+    base: "output"       # Base directory for output files
+    processed: "processed"  # Directory for processed markdown files
+    merged: "merged"     # Directory for merged output files
+  temp: "tmp"           # Directory for temporary files and cache
+  cache: "cache"        # Directory for long-term cache storage
+
+# Sitemap Module Configuration
+sitemap:
+  auto_merge: true      # Automatically merge processed sitemap pages
+  parallel: false       # Process sitemap URLs in parallel (experimental)
+  max_concurrent: 5     # Maximum concurrent requests when parallel is true
+
+# Cost Tracking Configuration
+cost_tracking:
+  enabled: true         # Track API costs
+  warn_threshold: 10.0  # Warn when cost exceeds this amount (USD)
+  stop_threshold: 50.0  # Stop processing when cost exceeds this amount (USD) 

@@ -13,6 +13,8 @@ This document tracks the progress of the Site Snacker project compared to the or
 - ✅ Orchestrator module
 - ✅ Sitemap support
 - ✅ Image description preservation in merger
+- ✅ Centralized configuration system
+- ✅ Directory structure standardization
 
 ### In Progress
 - 🔄 Testing
@@ -25,6 +27,40 @@ This document tracks the progress of the Site Snacker project compared to the or
 - ⏳ Deployment
 
 ## Detailed Changes
+
+### Documentation Updates
+- Updated PLAN.md to reflect the current state of the project:
+  - Added Merger and Sitemap modules to the module architecture
+  - Updated the file structure to match the actual implementation
+  - Added checkmarks (✅) to completed implementation phases
+  - Updated configuration details to reflect YAML format
+  - Added details about the directory structure with domain-based organization
+- Updated README.md to reflect the correct directory structure:
+  - Clarified that processed files are organized by domain
+  - Enhanced the configuration section with more details
+  - Added information about automatic remerging after retrying failed URLs
+- Updated IMPLEMENTATION.md with detailed configuration examples:
+  - Added a complete YAML configuration example
+  - Added a configuration usage section
+  - Updated the directory structure to match the actual implementation
+
+### Configuration System
+- Created centralized configuration file `site-snacker.config.yml`
+- Implemented TypeScript interfaces for configuration types
+- Created singleton ConfigLoader class in `src/config/index.ts`
+- Added convenience methods for module-specific configuration access
+- Updated all modules to use the new configuration system:
+  - Fetcher module now uses configuration for headers, timeouts, and Cloudflare settings
+  - Puppeteer module now uses configuration for viewport, user agent, and headers
+  - Converter module now uses configuration for markdown settings and directory paths
+  - Merger module now uses configuration for directory paths
+  - Sitemap module now uses configuration for parallel processing and user agent
+  - Orchestrator module now uses configuration for all module settings and paths
+- Updated image processing to use gpt-4o-mini model instead of deprecated gpt-4-vision-preview
+- Updated OpenAI pricing configuration with current model rates:
+  - Added gpt-4o pricing ($5/1M input tokens, $15/1M output tokens)
+  - Added gpt-4o-mini pricing ($0.15/1M input tokens, $0.60/1M output tokens)
+  - Maintained whisper-1 pricing ($0.006 per minute)
 
 ### HTML Fetcher Module
 - Implemented `fetchHtml` function that takes a URL and returns HTML content
@@ -222,6 +258,23 @@ This document tracks the progress of the Site Snacker project compared to the or
   - These files already contain the image description tags
   - Ensures image descriptions are preserved in the merged output
   - Added logging to track which files are being used
+- Updated processor module to use centralized configuration system:
+  - Removed module-specific configuration files (processor.conf.yml)
+  - Updated image processor to use global config
+  - Updated audio processor to use global config
+  - Fixed configuration access in both processors
+  - Improved type safety in configuration usage
+- Removed default OpenAI model in favor of module-specific models:
+  - Removed `default_model` from openai configuration
+  - Updated image processor to use `gpt-4-vision-preview` model
+  - Each module now explicitly specifies its required model
+  - Improved clarity in model selection for each task
+- Moved OpenAI API pricing to configuration file:
+  - Added pricing section to openai configuration
+  - Updated cost tracker to use pricing from configuration
+  - Made pricing information configurable and maintainable
+  - Improved type safety for pricing configuration
+  - Fixed property name consistency (perMinute → per_minute)
 
 ### Fixed
 - Resolved duplicate ProcessorConfig interface definition
@@ -236,6 +289,12 @@ This document tracks the progress of the Site Snacker project compared to the or
 - Fixed audio filename handling to match image processing pattern
 - Fixed issue with image descriptions not being preserved in merged markdown files
 - Fixed merger to use processed files that already contain image descriptions
+- Resolved circular dependency issues in processor module:
+  - Restructured imports to avoid initialization errors
+  - Moved configuration initialization to the top of index.ts
+  - Updated image and audio processors to import config directly
+  - Fixed costTracker initialization in each module
+  - Improved module organization for better dependency management
 
 ### Added
 - Implemented audio processing functionality in content processor module
@@ -264,6 +323,9 @@ This document tracks the progress of the Site Snacker project compared to the or
   - Automatic extraction of breadcrumb navigation
   - Conversion of breadcrumbs to markdown format
   - Integration with main converter module
+- Centralized configuration system using `site-snacker.config.yml`
+- Documentation for configuration system in README.md
+- Environment variables support for sensitive settings
 
 ### Removed
 - Removed redundant test-fetcher.ts file

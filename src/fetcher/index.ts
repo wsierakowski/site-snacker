@@ -3,13 +3,17 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { urlToFilePath } from '../utils/url.js';
 import { mkdirp } from 'mkdirp';
+import { getFetcherConfig } from '../config';
 export { fetchWithPuppeteer } from './puppeteer';
+
+// Get configuration
+const config = getFetcherConfig();
 
 // Default browser-like headers to mimic a real browser
 const DEFAULT_HEADERS = {
-  'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-  'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
-  'Accept-Language': 'en-US,en;q=0.9',
+  'User-Agent': config.puppeteer.user_agent,
+  'Accept': config.puppeteer.headers.accept,
+  'Accept-Language': config.puppeteer.headers.accept_language,
   'Accept-Encoding': 'gzip, deflate, br',
   'Cache-Control': 'no-cache',
   'Pragma': 'no-cache',
@@ -79,12 +83,12 @@ export async function fetchHtml(
     useCloudflareHeaders?: boolean;
   } = {}
 ): Promise<string> {
-  // Default options
+  // Default options from config
   const {
     retries = 3,
-    retryDelay = 2000,
-    timeout = 15000,
-    useCloudflareHeaders = false
+    retryDelay = config.cloudflare.wait_time,
+    timeout = config.cloudflare.timeout,
+    useCloudflareHeaders = config.cloudflare.auto_detect
   } = options;
 
   // Convert URL to file path

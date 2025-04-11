@@ -3,6 +3,11 @@ import { XMLParser } from 'fast-xml-parser';
 import { extractDomain } from '../utils/url.js';
 import * as fs from 'fs';
 import * as path from 'path';
+import { getFetcherConfig, getSitemapConfig } from '../config';
+
+// Get configuration
+const fetcherConfig = getFetcherConfig();
+const sitemapConfig = getSitemapConfig();
 
 interface SitemapURL {
   loc: string;
@@ -41,7 +46,7 @@ export async function parseSitemap(source: string): Promise<string[]> {
       console.log(`Fetching sitemap from URL: ${source}`);
       const response = await axios.get(source, {
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+          'User-Agent': fetcherConfig.puppeteer.user_agent,
           'Accept': 'application/xml, text/xml, */*',
         }
       });
@@ -62,9 +67,26 @@ export async function parseSitemap(source: string): Promise<string[]> {
       console.log(`Found sitemap index with ${sitemapIndex.sitemapindex.sitemap.length} sitemaps`);
       
       // Process each sitemap in the index
-      for (const sitemap of sitemapIndex.sitemapindex.sitemap) {
-        const sitemapUrls = await parseSitemap(sitemap.loc);
-        urls.push(...sitemapUrls);
+      if (sitemapConfig.parallel) {
+        // Process sitemaps in parallel with a limit on concurrent requests
+        const chunks = [];
+        for (let i = 0; i < sitemapIndex.sitemapindex.sitemap.length; i += sitemapConfig.max_concurrent) {
+          const chunk = sitemapIndex.sitemapindex.sitemap.slice(i, i + sitemapConfig.max_concurrent);
+          chunks.push(chunk);
+        }
+
+        for (const chunk of chunks) {
+          const chunkResults = await Promise.all(
+            chunk.map(sitemap => parseSitemap(sitemap.loc))
+          );
+          urls.push(...chunkResults.flat());
+        }
+      } else {
+        // Process sitemaps sequentially
+        for (const sitemap of sitemapIndex.sitemapindex.sitemap) {
+          const sitemapUrls = await parseSitemap(sitemap.loc);
+          urls.push(...sitemapUrls);
+        }
       }
     }
     // Handle regular sitemap files

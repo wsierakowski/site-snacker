@@ -5,6 +5,11 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { urlToFilePath } from '../utils/url.js';
 import { extractBreadcrumbs, breadcrumbsToMarkdown } from './helpers/breadcrumb-extractor.js';
+import { getConverterConfig, getDirectoryConfig } from '../config';
+
+// Get configuration
+const config = getConverterConfig();
+const dirConfig = getDirectoryConfig();
 
 /**
  * Ensures a directory exists, creating it if necessary
@@ -48,64 +53,66 @@ export async function htmlToMarkdown(html: string): Promise<string> {
       codeBlockStyle: 'fenced'
     });
 
-    // Add custom rules for table handling
-    turndownService.addRule('table', {
-      filter: 'table',
-      replacement: function(content, node) {
-        const table = node as HTMLTableElement;
-        const rows = Array.from(table.querySelectorAll('tr'));
-        if (rows.length === 0) return '';
+    // Add custom rules for table handling if enabled in config
+    if (config.markdown.preserve_tables) {
+      turndownService.addRule('table', {
+        filter: 'table',
+        replacement: function(content, node) {
+          const table = node as HTMLTableElement;
+          const rows = Array.from(table.querySelectorAll('tr'));
+          if (rows.length === 0) return '';
 
-        // Process header row
-        const headers = Array.from(rows[0].querySelectorAll('th, td'))
-          .map(cell => cell.textContent?.trim() || '')
-          .map(text => text.replace(/\|/g, '\\|')); // Escape pipe characters
+          // Process header row
+          const headers = Array.from(rows[0].querySelectorAll('th, td'))
+            .map(cell => cell.textContent?.trim() || '')
+            .map(text => text.replace(/\|/g, '\\|')); // Escape pipe characters
 
-        // Create header separator
-        const separator = headers.map(() => '---').join(' | ');
+          // Create header separator
+          const separator = headers.map(() => '---').join(' | ');
 
-        // Process data rows
-        const dataRows = rows.slice(1).map(row => {
-          return Array.from(row.querySelectorAll('td'))
-            .map(cell => {
-              // Get the cell content
-              let content = cell.textContent?.trim() || '';
-              
-              // Check if there's an example in the cell
-              const exampleMatch = content.match(/Example:\s*(.+)$/);
-              if (exampleMatch) {
-                // Split the content into description and example
-                const description = content.substring(0, content.indexOf('Example:')).trim();
-                const example = exampleMatch[1].trim();
+          // Process data rows
+          const dataRows = rows.slice(1).map(row => {
+            return Array.from(row.querySelectorAll('td'))
+              .map(cell => {
+                // Get the cell content
+                let content = cell.textContent?.trim() || '';
                 
-                // Format with a space between description and example
-                content = `${description} (Example: ${example})`;
-              }
-              
-              // Escape pipe characters
-              return content.replace(/\|/g, '\\|');
-            })
-            .join(' | ');
-        });
+                // Check if there's an example in the cell
+                const exampleMatch = content.match(/Example:\s*(.+)$/);
+                if (exampleMatch) {
+                  // Split the content into description and example
+                  const description = content.substring(0, content.indexOf('Example:')).trim();
+                  const example = exampleMatch[1].trim();
+                  
+                  // Format with a space between description and example
+                  content = `${description} (Example: ${example})`;
+                }
+                
+                // Escape pipe characters
+                return content.replace(/\|/g, '\\|');
+              })
+              .join(' | ');
+          });
 
-        // Combine all parts
-        const markdownTable = [
-          `| ${headers.join(' | ')} |`,
-          `| ${separator} |`,
-          ...dataRows.map(row => `| ${row} |`)
-        ].join('\n');
+          // Combine all parts
+          const markdownTable = [
+            `| ${headers.join(' | ')} |`,
+            `| ${separator} |`,
+            ...dataRows.map(row => `| ${row} |`)
+          ].join('\n');
 
-        return '\n\n' + markdownTable + '\n\n';
-      }
-    });
+          return '\n\n' + markdownTable + '\n\n';
+        }
+      });
 
-    // Add rule for table cells to prevent double processing
-    turndownService.addRule('tableCell', {
-      filter: ['th', 'td'],
-      replacement: function(content) {
-        return content;
-      }
-    });
+      // Add rule for table cells to prevent double processing
+      turndownService.addRule('tableCell', {
+        filter: ['th', 'td'],
+        replacement: function(content) {
+          return content;
+        }
+      });
+    }
     
     // Combine breadcrumbs with article content
     const markdown = breadcrumbMarkdown + turndownService.turndown(article.content);
@@ -123,7 +130,7 @@ export async function htmlToMarkdown(html: string): Promise<string> {
  * @returns The path to the saved Markdown file
  * @throws Error if file operations fail
  */
-export function saveMarkdown(markdown: string, url: string, outputDir: string = 'tmp'): string {
+export function saveMarkdown(markdown: string, url: string, outputDir: string = dirConfig.temp): string {
   try {
     // Get the file path with .md extension
     const filePath = urlToFilePath(url, outputDir, 'page.md');
@@ -150,7 +157,7 @@ export function saveMarkdown(markdown: string, url: string, outputDir: string = 
  * @returns The path to the saved metadata file
  * @throws Error if file operations fail
  */
-export function generateMetadata(markdown: string, url: string, outputDir: string = 'tmp'): string {
+export function generateMetadata(markdown: string, url: string, outputDir: string = dirConfig.temp): string {
   try {
     // Count words (split by whitespace and filter out empty strings)
     const wordCount = markdown.split(/\s+/).filter(word => word.length > 0).length;

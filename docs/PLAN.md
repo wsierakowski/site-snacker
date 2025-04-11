@@ -9,56 +9,74 @@ Site Snacker is a TypeScript-based tool that converts HTML websites into clean, 
 - **Purpose**: Download HTML content from public websites
 - **Libraries**:
   - Axios for HTTP requests
+  - Puppeteer for Cloudflare-protected sites
   - Simple file-based caching in tmp folder
   - Basic error handling with stdout logging
 - **Implementation**:
   - Fetch HTML content from URLs
   - Handle redirects and basic error cases
-  - Cache results in tmp/[url-hash]/index.html
+  - Cache results in tmp/[domain]/[path]/[filename].html
   - Provide clean interface for other modules
+  - Automatic fallback to Puppeteer when Cloudflare is detected
 
 ### 2. HTML to Markdown Converter Module
 - **Purpose**: Convert HTML content to clean Markdown
 - **Libraries**:
   - node-readability (Mozilla's algorithm) for content extraction
-  - Cheerio for HTML parsing and post-processing
-  - turndown or similar for HTML-to-Markdown conversion
+  - turndown for HTML-to-Markdown conversion
 - **Implementation**:
   - Extract main content using Readability.js
   - Clean and normalize the extracted content
   - Convert HTML to Markdown
   - Handle special elements (tables, lists, etc.)
+  - Preserve breadcrumbs and source information
 
 ### 3. Content Processor Module
 - **Purpose**: Process images and audio in the markdown content
 - **Implementation**:
   - Identify image tags in markdown
-  - Send images to multimodal model for description
+  - Send images to OpenAI Vision API for description
   - Format image descriptions in markdown
-  - Identify audio elements and generate transcriptions
+  - Identify audio elements and generate transcriptions using Whisper API
   - Format audio transcriptions in markdown
+  - Track API costs and implement safety limits
 
-### 4. Orchestrator Module
+### 4. Merger Module
+- **Purpose**: Combine multiple markdown files into a single document
+- **Implementation**:
+  - Preserve image descriptions in merged output
+  - Maintain original markdown structure
+  - Add metadata and section headers
+  - Handle both single files and sitemaps
+  - Organize output by domain
+
+### 5. Sitemap Module
+- **Purpose**: Process sitemaps to extract and process multiple URLs
+- **Implementation**:
+  - Parse XML sitemaps
+  - Extract URLs from sitemap entries
+  - Process each URL through the pipeline
+  - Support parallel processing (experimental)
+  - Auto-merge processed pages into a single document
+
+### 6. Orchestrator Module
 - **Purpose**: Coordinate the entire process
 - **Implementation**:
   - Manage workflow between modules
   - Handle file I/O operations
   - Generate metadata files
   - Ensure idempotency (avoid reprocessing)
+  - Provide progress tracking and reporting
+  - Generate cost summaries
 
-### 5. Token Monitor Module
-- **Purpose**: Track token usage and costs
-- **Implementation**:
-  - Count tokens in processed content
-  - Estimate API costs
-  - Implement safety limits
-
-### 6. Configuration Module
+### 7. Configuration Module
 - **Purpose**: Manage project settings
 - **Implementation**:
-  - Load settings from config file
+  - Load settings from YAML config file
   - Provide defaults
   - Validate configuration
+  - Centralize all module settings
+  - Support environment variables for sensitive data
 
 ## File Structure
 ```
@@ -67,40 +85,52 @@ site-snacker/
 │   ├── fetcher/         # HTML fetching module
 │   ├── converter/       # HTML to Markdown conversion
 │   ├── processor/       # Content processing (images, audio)
+│   ├── merger/          # Markdown file merging
+│   ├── sitemap/         # Sitemap processing
 │   ├── orchestrator/    # Process coordination
-│   ├── monitor/         # Token usage monitoring
 │   ├── config/          # Configuration management
+│   ├── utils/           # Shared utilities
+│   ├── types/           # TypeScript type definitions
 │   └── index.ts         # Entry point
-├── tmp/                 # Temporary files
+├── tmp/                 # Temporary files and cache
 ├── output/              # Generated markdown files
-├── config.json          # Configuration file
+│   ├── processed/       # Processed markdown files
+│   │   └── [domain]/    # Organized by domain
+│   └── merged/          # Merged documentation
+├── docs/                # Documentation
+├── site-snacker.config.yml  # Configuration file
 ├── package.json         # Project dependencies
 └── tsconfig.json        # TypeScript configuration
 ```
 
 ## Implementation Phases
 
-### Phase 1: Core Infrastructure
+### Phase 1: Core Infrastructure ✅
 - Set up project structure
 - Implement configuration module
 - Create basic orchestrator
 
-### Phase 2: HTML Fetching and Conversion
+### Phase 2: HTML Fetching and Conversion ✅
 - Implement HTML fetcher module
 - Implement HTML to Markdown converter
 - Test with various websites
 
-### Phase 3: Content Processing
+### Phase 3: Content Processing ✅
 - Implement image processing
 - Implement audio processing
 - Test with content containing media
 
-### Phase 4: Monitoring and Optimization
-- Implement token monitoring
+### Phase 4: Sitemap and Merging ✅
+- Implement sitemap processing
+- Implement markdown merging
+- Test with multi-page websites
+
+### Phase 5: Monitoring and Optimization ✅
+- Implement cost tracking
 - Add safety limits
 - Optimize performance
 
-### Phase 5: Website Crawling (Future)
+### Phase 6: Website Crawling (Future)
 - Implement website crawling
 - Add smart crawling strategies
 - Handle site maps and robots.txt

@@ -4,16 +4,15 @@ import axios from 'axios';
 import OpenAI from 'openai';
 import { urlToFilePath, urlToDirPath } from '../utils/url.js';
 import { downloadFile } from '../utils/download.js';
-import * as yaml from 'js-yaml';
-import { ProcessorConfig } from './types.js';
 import sharp from 'sharp';
 import { ChatCompletionMessageParam, ChatCompletionContentPart, ChatCompletionContentPartText, ChatCompletionContentPartImage } from 'openai/resources/chat/completions';
 import { ChatCompletion } from 'openai/resources';
-import { openai as globalOpenai, config as globalConfig, costTracker } from './index.js';
 import { URL } from 'url';
+import { getProcessorConfig } from '../config';
+import { CostTracker } from './cost-tracker';
 
-// Load configuration
-const config = yaml.load(fs.readFileSync(path.join(__dirname, 'processor.conf.yml'), 'utf8')) as ProcessorConfig;
+// Get configuration from the centralized config
+const config = getProcessorConfig().image;
 
 // Initialize OpenAI client
 if (!process.env.OPENAI_API_KEY) {
@@ -23,6 +22,9 @@ if (!process.env.OPENAI_API_KEY) {
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
+
+// Initialize cost tracker
+const costTracker = new CostTracker();
 
 interface ImageCache {
   description: string;
@@ -188,9 +190,9 @@ export async function processImages(
       console.log('Cache key:', cacheKey);
       const cachedData = getCachedDescription(cacheKey, pageDir);
       
-      if (cachedData && cachedData.model === config.image.model) {
+      if (cachedData && cachedData.model === config.model) {
         console.log('Using cached description from:', path.join(pageDir, cacheKey));
-        const imageWithDescription = `${fullMatch}\n\n<${config.image.markdown.description_tag}>${cachedData.description}</${config.image.markdown.description_tag}>\n\n`;
+        const imageWithDescription = `${fullMatch}\n\n<${config.markdown.description_tag}>${cachedData.description}</${config.markdown.description_tag}>\n\n`;
         processedMarkdown = processedMarkdown.replace(fullMatch, imageWithDescription);
         continue;
       }
@@ -258,11 +260,11 @@ export async function processImages(
       console.log('Generating image description...');
       try {
         const description = await generateImageDescription(imagePath, altText, contentType);
-        const imageWithDescription = `${fullMatch}\n\n<${config.image.markdown.description_tag}>${description}</${config.image.markdown.description_tag}>\n\n`;
+        const imageWithDescription = `${fullMatch}\n\n<${config.markdown.description_tag}>${description}</${config.markdown.description_tag}>\n\n`;
         processedMarkdown = processedMarkdown.replace(fullMatch, imageWithDescription);
         
         // Save description to cache in the page directory
-        saveToCache(cacheKey, pageDir, description, config.image.model);
+        saveToCache(cacheKey, pageDir, description, config.model);
         
         // Save description to a separate file in the page directory
         const descriptionPath = path.join(pageDir, imageFileName.replace(/\.[^.]+$/, '.md'));
@@ -271,7 +273,7 @@ export async function processImages(
       } catch (aiError: any) {
         console.error('Error generating image description:', aiError.message);
         // Add a note about the failed AI description but keep the image
-        const errorNote = `${fullMatch}\n\n<${config.image.markdown.description_tag}>Error generating description: ${aiError.message}</${config.image.markdown.description_tag}>\n\n`;
+        const errorNote = `${fullMatch}\n\n<${config.markdown.description_tag}>Error generating description: ${aiError.message}</${config.markdown.description_tag}>\n\n`;
         processedMarkdown = processedMarkdown.replace(fullMatch, errorNote);
       }
     } catch (error: any) {
@@ -304,12 +306,12 @@ async function generateImageDescription(imagePath: string, altText: string, cont
     
     console.log('Calling OpenAI Vision API...');
     const response = await openai.chat.completions.create({
-      model: config.image.model,
+      model: config.model,
       messages: [
         {
           role: "user",
           content: [
-            { type: "text", text: config.image.prompt.replace('{altText}', altText) },
+            { type: "text", text: config.prompt.replace('{altText}', altText) },
             {
               type: "image_url",
               image_url: {
@@ -319,7 +321,7 @@ async function generateImageDescription(imagePath: string, altText: string, cont
           ]
         }
       ],
-      max_tokens: config.image.max_tokens
+      max_tokens: config.max_tokens
     });
 
     // Track the API cost

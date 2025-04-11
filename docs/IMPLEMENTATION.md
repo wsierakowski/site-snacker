@@ -87,16 +87,83 @@ src/
 ```
 ├── output/           # Final output
 │   ├── processed/    # Processed markdown files
+│   │   └── [domain]/ # Organized by domain
 │   └── merged/       # Merged documentation
-└── docs/             # Documentation
+├── tmp/             # Temporary files and cache
+└── docs/            # Documentation
 ```
 
 ## Configuration
-- Environment variables for API keys
-- YAML-based configuration files
-- Configurable processing options
-- Model selection and parameters
-- Cache settings
+The application uses a centralized configuration system through `site-snacker.config.yml`. This file contains all configurable settings and is automatically loaded when the application starts.
+
+### Configuration Structure
+```yaml
+# OpenAI API Configuration
+openai:
+  apiKey: ${OPENAI_API_KEY}
+  models:
+    gpt4o:
+      name: "gpt-4o"
+      pricing:
+        input: 0.00001
+        output: 0.00003
+    gpt4oMini:
+      name: "gpt-4o-mini"
+      pricing:
+        input: 0.000005
+        output: 0.000015
+    whisper:
+      name: "whisper-1"
+      pricing: 0.006
+
+# Module-specific Settings
+processor:
+  image:
+    model: "gpt-4o"
+    prompt: "Describe this image in detail..."
+  audio:
+    model: "whisper-1"
+    language: "en"
+
+fetcher:
+  http:
+    timeout: 60000
+    retries: 3
+  puppeteer:
+    timeout: 120000
+    headless: true
+
+converter:
+  tableRules: true
+  breadcrumbs: true
+
+merger:
+  preserveImages: true
+  addMetadata: true
+
+# Directory Configuration
+directories:
+  base: "."
+  output:
+    base: "output"
+    processed: "processed"
+    merged: "merged"
+  temp: "tmp"
+  cache: "cache"
+
+# Cost Tracking
+costTracking:
+  enabled: true
+  warningThreshold: 1.0
+  errorThreshold: 5.0
+```
+
+### Configuration Usage
+- All modules access their settings through the centralized configuration system
+- Environment variables are used for sensitive data (API keys)
+- Directory paths are configurable but have sensible defaults
+- Cost tracking can be enabled/disabled and thresholds configured
+- Module-specific settings can be customized as needed
 
 ## Error Handling
 - Network error recovery
@@ -110,4 +177,4 @@ src/
 - Parallel processing
 - Resource cleanup
 - Memory management
-- API usage optimization 
+- API usage optimization

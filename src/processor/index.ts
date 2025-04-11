@@ -1,17 +1,9 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import OpenAI from 'openai';
-import { load } from 'js-yaml';
-import { processImages } from './image';
-import { processAudio } from './audio';
 import { ensureDirectoryExists } from './utils';
-import { ProcessorConfig } from './types';
 import { CostTracker } from './cost-tracker';
-
-// Load configuration
-const configPath = path.join(__dirname, 'processor.conf.yml');
-const configFile = fs.readFileSync(configPath, 'utf8');
-const config: ProcessorConfig = load(configFile) as ProcessorConfig;
+import { getProcessorConfig, getOpenAIConfig } from '../config';
 
 // Initialize OpenAI client
 if (!process.env.OPENAI_API_KEY) {
@@ -24,6 +16,19 @@ const openai = new OpenAI({
 
 // Initialize cost tracker
 const costTracker = new CostTracker();
+
+// Initialize configuration
+const config = {
+  processor: getProcessorConfig(),
+  openai: getOpenAIConfig()
+};
+
+// Export OpenAI client, config, and cost tracker for use in other modules
+export { openai, costTracker, config };
+
+// Import processor functions after config is initialized
+import { processImages } from './image';
+import { processAudio } from './audio';
 
 /**
  * Processes markdown content to handle images and audio
@@ -126,7 +131,4 @@ async function generateAudioTranscription(audioPath: string, linkText: string): 
     console.error('Error generating audio transcription:', error);
     return `Error generating transcription: ${error?.message || 'Unknown error'}`;
   }
-}
-
-// Export OpenAI client, config, and cost tracker for use in other modules
-export { openai, config, costTracker }; 
+} 

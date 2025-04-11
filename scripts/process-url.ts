@@ -4,6 +4,7 @@ import { processMarkdownContent } from '../src/processor';
 import * as fs from 'fs';
 import * as path from 'path';
 import { urlToFilePath } from '../src/utils/url.js';
+import { getDirectoryConfig } from '../src/config';
 
 /**
  * Script to process cached markdown content for images and audio
@@ -17,6 +18,9 @@ async function main() {
   }
 
   try {
+    // Get directory configuration
+    const dirConfig = getDirectoryConfig();
+
     // Convert HTML URL to markdown file path
     const markdownPath = urlToFilePath(input).replace(/\.html$/, '.md');
     
@@ -33,7 +37,11 @@ async function main() {
     const markdown = fs.readFileSync(markdownPath, 'utf-8');
 
     // Create output directory for processed content
-    const outputDir = path.join(process.cwd(), 'output', 'processed');
+    const outputDir = path.join(
+      process.cwd(),
+      dirConfig.output.base,
+      dirConfig.output.processed
+    );
     await fs.promises.mkdir(outputDir, { recursive: true });
 
     // Process the markdown content
@@ -53,11 +61,7 @@ async function main() {
     console.log('------------------------');
     console.log(costSummary);
   } catch (error: any) {
-    console.error('Error:', error.message);
-    if (error.response) {
-      console.error('Response status:', error.response.status);
-      console.error('Response data:', error.response.data);
-    }
+    console.error('Error processing markdown content:', error.message);
     process.exit(1);
   }
 }

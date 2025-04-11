@@ -3,6 +3,10 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { urlToFilePath } from '../utils/url.js';
 import { mkdirp } from 'mkdirp';
+import { getFetcherConfig } from '../config';
+
+// Get configuration
+const config = getFetcherConfig();
 
 /**
  * Fetches HTML content from a URL using Puppeteer, which can handle Cloudflare protection
@@ -21,8 +25,8 @@ export async function fetchWithPuppeteer(
 ): Promise<string> {
   const {
     useCache = true,
-    waitTime = 15000, // Increased default wait time
-    timeout = 60000,  // Increased timeout
+    waitTime = config.cloudflare.wait_time,
+    timeout = config.cloudflare.timeout,
     waitForSelector = 'body'
   } = options;
 
@@ -47,7 +51,7 @@ export async function fetchWithPuppeteer(
       '--disable-dev-shm-usage',
       '--disable-accelerated-2d-canvas',
       '--disable-gpu',
-      '--window-size=1920x1080',
+      `--window-size=${config.puppeteer.viewport.width}x${config.puppeteer.viewport.height}`,
       '--disable-notifications',
       '--disable-extensions',
       '--ignore-certificate-errors'
@@ -58,11 +62,14 @@ export async function fetchWithPuppeteer(
     const page = await browser.newPage();
 
     // Set more browser-like settings
-    await page.setViewport({ width: 1920, height: 1080 });
-    await page.setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36');
+    await page.setViewport({ 
+      width: config.puppeteer.viewport.width, 
+      height: config.puppeteer.viewport.height 
+    });
+    await page.setUserAgent(config.puppeteer.user_agent);
     await page.setExtraHTTPHeaders({
-      'Accept-Language': 'en-US,en;q=0.9',
-      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+      'Accept-Language': config.puppeteer.headers.accept_language,
+      'Accept': config.puppeteer.headers.accept,
       'Connection': 'keep-alive',
       'Upgrade-Insecure-Requests': '1',
       'DNT': '1'
