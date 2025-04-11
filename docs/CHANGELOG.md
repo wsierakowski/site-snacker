@@ -171,6 +171,25 @@ This document tracks the progress of the Site Snacker project compared to the or
   - Saving transcriptions in MD files alongside audio files
   - Cache files are stored in the same directory
   - Improved error handling and logging
+- Re-enabled OpenAI API calls for image and audio processing
+- Fixed cost tracking for Vision API calls
+- Updated process-url.ts script to accept HTML URLs directly instead of requiring markdown file paths
+- Simplified URL handling in process-url.ts to be consistent with fetch and convert scripts
+- Reorganized directory structure for better organization:
+  - All page assets (images, audio, descriptions, cache) are now stored in a directory named after the page
+  - Using consistent naming with UUIDs across all asset types
+  - Improved file organization documentation in README.md
+- Fixed URL handling in process-url.ts to properly handle HTML extensions
+- Updated process-url.ts script to accept HTML URLs directly instead of requiring markdown file paths
+- Simplified URL handling in process-url.ts to be consistent with fetch and convert scripts
+- Re-enabled OpenAI API calls for image and audio processing
+- Fixed cost tracking for Vision API calls
+- Modified audio file processing to match image handling pattern:
+  - Audio files are now stored directly in the page directory
+  - Using UUIDs from URLs when available
+  - Saving transcriptions in MD files alongside audio files
+  - Cache files are stored in the same directory
+  - Improved error handling and logging
 
 ### Fixed
 - Resolved duplicate ProcessorConfig interface definition
@@ -180,6 +199,9 @@ This document tracks the progress of the Site Snacker project compared to the or
 - Fixed issue with processing relative image URLs (like those from Next.js)
 - Improved URL resolution for images with relative paths
 - Fixed image cache file extensions to use .json instead of .html
+- Fixed issue with directory creation when processing URLs with .html extension
+- Fixed image filename handling to properly use UUIDs from URLs
+- Fixed audio filename handling to match image processing pattern
 
 ### Added
 - Implemented audio processing functionality in content processor module

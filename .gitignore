@@ -135,6 +135,8 @@ dist
 .yarn/install-state.gz
 .pnp.*
 
+.vscode
+
 .ai_docs
 tmp
 output

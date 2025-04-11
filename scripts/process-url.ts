@@ -7,29 +7,18 @@ import { urlToFilePath } from '../src/utils/url.js';
 
 /**
  * Script to process cached markdown content for images and audio
- * Usage: bun process-url.ts <url_or_file>
+ * Usage: bun process-url.ts <url>
  */
 async function main() {
   const input = process.argv[2];
   if (!input) {
-    console.error('Please provide a URL or file path to process');
+    console.error('Please provide a URL to process');
     process.exit(1);
   }
 
   try {
-    let markdownPath: string;
-    let baseUrl: string;
-
-    // Check if input is a local file path
-    if (fs.existsSync(input)) {
-      markdownPath = input;
-      // For local files, use a dummy base URL that matches the file structure
-      baseUrl = 'https://' + path.dirname(input).replace(/^tmp\//, '');
-    } else {
-      // Treat input as URL
-      markdownPath = urlToFilePath(input).replace(/\.html$/, '.md');
-      baseUrl = input.replace(/\.html$/, '');
-    }
+    // Convert HTML URL to markdown file path
+    const markdownPath = urlToFilePath(input).replace(/\.html$/, '.md');
     
     if (!fs.existsSync(markdownPath)) {
       console.error(`No markdown file found at: ${markdownPath}`);
@@ -49,6 +38,7 @@ async function main() {
 
     // Process the markdown content
     console.log('Processing markdown for images and audio...');
+    const baseUrl = input.replace(/\.html$/, '');
     const { content: processedMarkdown, costSummary } = await processMarkdownContent(markdown, baseUrl, outputDir, markdownPath);
 
     // Save processed markdown
@@ -59,6 +49,8 @@ async function main() {
     console.log(`Processed markdown saved to: ${processedPath}`);
     
     // Display cost summary
+    console.log('\nOpenAI API Usage Summary:');
+    console.log('------------------------');
     console.log(costSummary);
   } catch (error: any) {
     console.error('Error:', error.message);
@@ -70,5 +62,4 @@ async function main() {
   }
 }
 
-// Run the script
 main(); 

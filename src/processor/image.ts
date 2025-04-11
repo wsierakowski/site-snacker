@@ -309,12 +309,6 @@ export async function processImages(
  * @returns A description of the image
  */
 async function generateImageDescription(imagePath: string, altText: string, contentType: string = 'image/png'): Promise<string> {
-  // TEMPORARY: Skip OpenAI API calls during development
-  console.log('Skipping OpenAI API call during development');
-  return `[DEBUG] Image description skipped. Alt text: ${altText}`;
-
-  // Original code commented out
-  /*
   try {
     // Read the image file
     const imageBuffer = fs.readFileSync(imagePath);
@@ -322,14 +316,12 @@ async function generateImageDescription(imagePath: string, altText: string, cont
     
     console.log('Calling OpenAI Vision API...');
     const response = await openai.chat.completions.create({
+      model: config.image.model,
       messages: [
         {
           role: "user",
           content: [
-            { 
-              type: "text", 
-              text: config.image.prompt.replace('{altText}', altText)
-            },
+            { type: "text", text: config.image.prompt.replace('{altText}', altText) },
             {
               type: "image_url",
               image_url: {
@@ -339,32 +331,15 @@ async function generateImageDescription(imagePath: string, altText: string, cont
           ]
         }
       ],
-      model: config.image.model,
       max_tokens: config.image.max_tokens
     });
 
     // Track the API cost
     costTracker.trackVisionAPI(response);
-
-    const description = response.choices[0]?.message?.content;
-    if (!description) {
-      throw new Error('No description generated');
-    }
-
-    console.log('Description length:', description.length, 'characters');
-    return description;
-  } catch (error: any) {
-    // Check for specific OpenAI API errors
-    if (error.response?.status === 401) {
-      throw new Error('OpenAI API key is invalid or missing');
-    } else if (error.response?.status === 429) {
-      throw new Error('OpenAI API rate limit exceeded');
-    } else if (error.response?.status === 413) {
-      throw new Error('Image file is too large for the API');
-    }
     
-    // Re-throw the error with more context
-    throw new Error(`OpenAI API error: ${error.message}`);
+    return response.choices[0].message.content || 'No description generated';
+  } catch (error) {
+    console.error("Error generating image description:", error);
+    return `[Error generating description for image: ${altText}]`;
   }
-  */
 } 

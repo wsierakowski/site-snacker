@@ -73,11 +73,32 @@ bun run process https://en.wikipedia.org/wiki/Golden_Gate_Bridge
 ```
 
 After running these commands:
-- The HTML will be cached in `tmp/en.wikipedia.org/...`
-- The Markdown will be saved in the same directory
-- Processed Markdown with image descriptions will be in the same location
-- Each image will have a corresponding `.md` file with its AI-generated description (e.g., `Golden_Gate_Bridge_0.jpg.md`)
-- The AI will generate detailed descriptions of the bridge's architecture, historical photos, and technical diagrams
+- The HTML will be cached in `tmp/[domain]/[path].html`
+- The Markdown will be saved as `tmp/[domain]/[path].md`
+- Each page's assets will be stored in a directory named after the page:
+  - Images: `tmp/[domain]/[path]/uuid-xxxx.png`
+  - Image descriptions: `tmp/[domain]/[path]/uuid-xxxx.md`
+  - Image cache: `tmp/[domain]/[path]/uuid-xxxx.png.json`
+  - Audio files: `tmp/[domain]/[path]/uuid-xxxx.mp3`
+  - Audio transcriptions: `tmp/[domain]/[path]/uuid-xxxx.md`
+  - Audio cache: `tmp/[domain]/[path]/uuid-xxxx.mp3.json`
+- Processed Markdown with descriptions will be in `output/processed/[filename].md`
+
+For example, for `https://doc.sitecore.com/search/en/users/search-user-guide/attributes.html`:
+```text
+tmp/
+└── doc.sitecore.com/
+    └── search/
+        └── en/
+            └── users/
+                └── search-user-guide/
+                    ├── attributes.html
+                    ├── attributes.md
+                    └── attributes/
+                        ├── uuid-xxxx.png
+                        ├── uuid-xxxx.md
+                        └── uuid-xxxx.png.json
+```
 
 ### Example with Cloudflare-Protected Site
 
