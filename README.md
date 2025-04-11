@@ -1,15 +1,38 @@
 # Site Snacker
 
+![Site Snacker](docs/site_snacker_logo_hz_sm.png)
+
 The script snacks on websites and spits out tasty Markdown.
 
 ## Description
 
-Site Snacker is a TypeScript-based tool that converts HTML websites into clean, readable Markdown format. It's built with Bun for optimal performance and developer experience.
+Site Snacker is a powerful tool that transforms web content into clean, accessible Markdown format. It goes beyond simple HTML conversion by:
+
+- **Smart Content Extraction**: Uses reader mode to focus on what matters - main content, headings, and relevant sections while excluding navigation menus, sidebars, ads, and other distractions
+- **AI-Powered Enhancements** (using OpenAI):
+  - Automatically describes images, screenshots, and diagrams using GPT-4 Vision
+  - Transcribes audio content using Whisper API when present in the page
+- **Flexible Processing**:
+  - Process a single webpage for quick documentation
+  - Handle entire sitemaps to document full websites
+  - Merge multiple pages into one cohesive document
+- **Smart Fetching**:
+  - Automatically detects Cloudflare-protected sites
+  - Seamlessly switches to Puppeteer mode when needed
+  - No manual intervention required for protected sites
+- **Efficient Caching**:
+  - Caches downloaded HTML, images, and audio files
+  - Stores AI-generated descriptions and transcriptions
+  - Skips re-processing of already processed content
+  - Saves on API costs by reusing cached results
+
+Built with TypeScript and Bun for optimal performance and developer experience.
 
 ## Prerequisites
 
 - [Bun](https://bun.sh/) installed on your system
 - Node.js (optional, but recommended for development tools)
+- OpenAI API key (for GPT-4 Vision and Whisper API)
 
 ## Installation
 
@@ -35,7 +58,7 @@ echo "OPENAI_API_KEY=your_api_key_here" > .env
 The fastest way to process a webpage is using the `snack` command. It works seamlessly with both single URLs and sitemaps:
 
 ```bash
-# Process a single webpage
+# Process a single webpage (automatically handles Cloudflare protection)
 bun run snack https://example.com
 
 # Process a sitemap (automatically detects and processes all URLs)
@@ -44,15 +67,13 @@ bun run snack https://example.com/sitemap.xml
 # Process a local sitemap file
 bun run snack ./local-sitemap.xml
 
-# All options work the same way for both single URLs and sitemaps
+# You can still force Puppeteer mode if needed
 bun run snack https://example.com --puppeteer
-bun run snack https://example.com/sitemap.xml --puppeteer
-
-# Disable automatic merging of sitemap pages (default is to merge)
-bun run snack https://example.com/sitemap.xml --no-merge
 ```
 
-The script automatically detects whether you've provided a single URL or a sitemap and handles it appropriately. When processing a sitemap, you'll see detailed progress information:
+The script automatically detects whether you've provided a single URL or a sitemap and handles it appropriately. For Cloudflare-protected sites, it will automatically switch to Puppeteer mode without any manual intervention.
+
+When processing a sitemap, you'll see detailed progress information:
 
 ```
 === Processing Sitemap ===
@@ -124,50 +145,47 @@ bun run convert https://en.wikipedia.org/wiki/Golden_Gate_Bridge
 bun run process https://en.wikipedia.org/wiki/Golden_Gate_Bridge
 ```
 
-After running these commands:
-- The HTML will be cached in `tmp/[domain]/[path]/[filename].html`
-- The Markdown will be saved as `tmp/[domain]/[path]/[filename].md`
-- Each page's assets will be stored in a directory named after the page:
-  - Images: `tmp/[domain]/[path]/[filename]/uuid-xxxx.png`
-  - Image descriptions: `tmp/[domain]/[path]/[filename]/uuid-xxxx.md`
-  - Image cache: `tmp/[domain]/[path]/[filename]/uuid-xxxx.png.json`
-  - Audio files: `tmp/[domain]/[path]/[filename]/uuid-xxxx.mp3`
-  - Audio transcriptions: `tmp/[domain]/[path]/[filename]/uuid-xxxx.md`
-  - Audio cache: `tmp/[domain]/[path]/[filename]/uuid-xxxx.mp3.json`
-- Processed Markdown with descriptions will be in `output/processed/[filename].md`
+After running these commands, the tool will generate:
 
-For example, for `https://doc.sitecore.com/search/en/users/search-user-guide/attributes.html`:
-```text
-tmp/
-└── doc.sitecore.com/
-    └── search/
-        └── en/
-            └── users/
-                └── search-user-guide/
-                    ├── attributes.html
-                    ├── attributes.md
-                    └── attributes/
-                        ├── uuid-xxxx.png
-                        ├── uuid-xxxx.md
-                        └── uuid-xxxx.png.json
+### Output Files
+The processed content will be available in the `output` directory:
+
+```
+output/
+├── processed/           # Individual processed files
+│   ├── page1.md        # Markdown with image descriptions
+│   └── page2.md        # and audio transcriptions
+└── merged/             # Combined documentation
+    └── sitemap.md      # All pages merged into one file
 ```
 
-### Example with Cloudflare-Protected Site
+Each processed markdown file includes:
+- Clean, readable content
+- AI-generated image descriptions
+- Audio transcriptions (if available)
+- Original source URL reference
+- Generation timestamp
 
-If you encounter a Cloudflare challenge, the script will let you know and provide instructions. Here's how to handle it:
+The merged output preserves all these features while combining multiple pages into a single document, perfect for use with AI assistants like ChatGPT or Claude.
+
+For implementation details about temporary files and caching, see [Implementation Details](docs/IMPLEMENTATION.md).
+
+### Handling Protected Sites
+
+Site Snacker automatically handles Cloudflare-protected sites:
+
+1. First attempts a standard fetch
+2. If Cloudflare protection is detected, automatically switches to Puppeteer mode
+3. Continues processing without requiring manual intervention
+
+You can also force Puppeteer mode if you know a site needs it:
 
 ```bash
-# First attempt might fail with Cloudflare challenge
-bun run fetch https://example.com
+# Force Puppeteer mode
+bun run snack https://example.com --puppeteer
 
-# Retry using the Puppeteer option
-bun run fetch:puppeteer https://example.com
-# or
-bun run fetch https://example.com --puppeteer
-
-# Then proceed with convert and process as usual
-bun run convert https://example.com
-bun run process https://example.com
+# Customize Puppeteer behavior if needed
+bun run snack https://example.com --puppeteer --wait=20000 --timeout=60000
 ```
 
 ### Merging Processed Files
@@ -247,198 +265,6 @@ bun run test:process-url
 bun run test:scripts
 ```
 
-## Project Modules
-
-Site Snacker is organized into several modules, each with a specific responsibility:
-
-### Fetcher Module (`src/fetcher/`)
-
-**Description**: Downloads HTML content from websites and caches it locally.
-
-**How it works**:
-- Uses Axios for basic HTML fetching
-- Uses Puppeteer for Cloudflare-protected sites
-- Converts URLs to file paths for caching
-- Stores downloaded content in a `tmp/[domain]/[path]` structure
-- Implements caching to avoid re-downloading the same content
-- Automatically detects and handles Cloudflare protection
-
-**Contract**:
-```typescript
-// Regular fetch with Cloudflare header support
-async function fetchHtml(
-  url: string, 
-  useCache: boolean = true,
-  options: {
-    timeout?: number;
-    useCloudflareHeaders?: boolean;
-  } = {}
-): Promise<string>
-
-// Puppeteer-based fetch for Cloudflare-protected sites
-async function fetchWithPuppeteer(
-  url: string,
-  options: {
-    useCache?: boolean;
-    waitTime?: number;
-    timeout?: number;
-    waitForSelector?: string;
-  } = {}
-): Promise<string>
-```
-
-**Usage**:
-```bash
-# Fetch any URL (automatically handles Cloudflare)
-bun run fetch https://example.com
-
-# Fetch with explicit Puppeteer mode
-bun run fetch https://example.com --puppeteer
-
-# Customize wait time for Cloudflare challenge
-bun run fetch https://example.com --puppeteer --wait=20000
-
-# Customize timeout and disable cache
-bun run fetch https://example.com --timeout=60000 --no-cache
-```
-
-### Converter Module (`src/converter/`)
-
-**Description**: Converts HTML content to clean Markdown format.
-
-**How it works**:
-- Uses Readability to extract the main content from HTML
-- Removes noise like menus, sidebars, and ads
-- Converts HTML to Markdown using Turndown
-- Handles special cases like tables with custom rules
-
-**Contract**:
-```typescript
-import { htmlToMarkdown, saveMarkdown, generateMetadata } from './src/converter';
-
-// Convert HTML to Markdown
-const markdown = await htmlToMarkdown(html);
-
-// Save Markdown to a file
-const markdownPath = saveMarkdown(markdown, url, outputDir: string = 'tmp');
-
-// Generate metadata
-const metadataPath = generateMetadata(markdown, url, outputDir: string = 'tmp');
-```
-- **Input**: HTML string
-- **Output**: Markdown string, file paths
-- **Side effects**: Writes files to the tmp directory
-
-**Tests**:
-```bash
-# Run the converter tests
-bun run test:converter
-```
-
-### Processor Module (`src/processor/`)
-
-**Description**: Processes Markdown content to handle images and audio.
-
-**How it works**:
-- Identifies images and audio in Markdown content
-- Downloads and saves media files locally
-- Generates descriptions for images using OpenAI's API
-- Transcribes audio using OpenAI's Whisper model
-- Implements caching for processed content
-
-**Contract**:
-```typescript
-async function processMarkdownContent(
-  markdown: string,
-  baseUrl: string,
-  outputDir: string = 'output'
-): Promise<string>
-```
-- **Input**: Markdown content, base URL, output directory
-- **Output**: Processed Markdown with image descriptions and audio transcriptions
-- **Side effects**: Downloads media files, creates cache files
-
-**Tests**:
-```bash
-# Run the processor integration test
-bun run test:processor:integration
-```
-
-### URL Utilities (`src/utils/url.ts`)
-
-**Description**: Provides utilities for URL handling and file path conversion.
-
-**How it works**:
-- Converts URLs to file paths
-- Extracts domains and paths from URLs
-- Sanitizes file paths for filesystem compatibility
-
-**Contract**:
-```typescript
-function urlToFilePath(url: string, baseDir: string = 'tmp'): string
-function sanitizeFilePath(filePath: string): string
-function extractDomain(url: string): string
-function extractPath(url: string): string
-function urlToDirPath(url: string, baseDir: string = 'tmp'): string
-```
-- **Input**: URL or file path
-- **Output**: Converted file path or extracted components
-
-### Orchestrator Module (`src/orchestrator/`)
-
-**Description**: Coordinates the entire process of fetching, converting, and processing webpages. Seamlessly handles both single URLs and sitemaps.
-
-**How it works**:
-- Takes a URL or sitemap and optional configuration
-- Automatically detects input type (single URL or sitemap)
-- For single URLs: processes the page directly
-- For sitemaps: processes all URLs in sequence
-- Handles file paths and directory creation
-- Provides detailed progress logging
-- Returns paths to all generated files
-- Tracks success/failure for each URL in sitemaps
-
-**Contract**:
-```typescript
-interface OrchestrationResult {
-  htmlPath: string;
-  markdownPath: string;
-  processedPath: string;
-  costSummary: string;
-}
-
-interface SitemapOrchestrationResult {
-  results: OrchestrationResult[];
-  totalCostSummary: string;
-}
-
-async function orchestrate(
-  url: string,
-  options?: {
-    usePuppeteer?: boolean;
-    waitTime?: number;
-    timeout?: number;
-    useCache?: boolean;
-  }
-): Promise<OrchestrationResult | SitemapOrchestrationResult>
-```
-
-**Usage**:
-```bash
-# Process a single webpage
-bun run snack https://example.com
-
-# Process a sitemap (automatically detects and processes all URLs)
-bun run snack https://example.com/sitemap.xml
-
-# Process a local sitemap file
-bun run snack ./local-sitemap.xml
-
-# All options work the same way for both single URLs and sitemaps
-bun run snack https://example.com --puppeteer
-bun run snack https://example.com/sitemap.xml --puppeteer
-```
-
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details. 
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
