@@ -32,7 +32,17 @@ echo "OPENAI_API_KEY=your_api_key_here" > .env
 
 ## Quick Start Guide
 
-Follow these steps to fetch, convert, and process a webpage:
+The fastest way to process a webpage is using the `snack` command:
+
+```bash
+# Process a webpage in one go (fetch, convert, and process)
+bun run snack https://example.com
+
+# For Cloudflare-protected sites:
+bun run snack https://example.com --puppeteer
+```
+
+Alternatively, you can run each step separately:
 
 1. **Fetch the webpage**:
 ```bash
@@ -315,6 +325,49 @@ function urlToDirPath(url: string, baseDir: string = 'tmp'): string
 ```
 - **Input**: URL or file path
 - **Output**: Converted file path or extracted components
+
+### Orchestrator Module (`src/orchestrator/`)
+
+**Description**: Coordinates the entire process of fetching, converting, and processing a webpage.
+
+**How it works**:
+- Takes a URL and optional configuration
+- Runs fetch, convert, and process steps in sequence
+- Handles file paths and directory creation
+- Provides detailed progress logging
+- Returns paths to all generated files
+
+**Contract**:
+```typescript
+interface OrchestrationResult {
+  htmlPath: string;
+  markdownPath: string;
+  processedPath: string;
+  costSummary: string;
+}
+
+async function orchestrate(
+  url: string,
+  options?: {
+    usePuppeteer?: boolean;
+    waitTime?: number;
+    timeout?: number;
+    useCache?: boolean;
+  }
+): Promise<OrchestrationResult>
+```
+
+**Usage**:
+```bash
+# Process a webpage in one go
+bun run snack https://example.com
+
+# Use Puppeteer for Cloudflare-protected sites
+bun run snack https://example.com --puppeteer
+
+# Customize options
+bun run snack https://example.com --puppeteer --wait=20000 --timeout=60000 --no-cache
+```
 
 ## License
 

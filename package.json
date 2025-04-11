@@ -21,7 +21,8 @@
     "fetch": "bun run scripts/fetch-url.ts",
     "fetch:puppeteer": "bun run scripts/fetch-url.ts --puppeteer",
     "convert": "bun run scripts/convert-url.ts",
-    "process": "bun scripts/process-url.ts"
+    "process": "bun scripts/process-url.ts",
+    "snack": "bun scripts/snack-url.ts"
   },
   "keywords": [
     "markdown",

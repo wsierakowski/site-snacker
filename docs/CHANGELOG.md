@@ -190,6 +190,18 @@ This document tracks the progress of the Site Snacker project compared to the or
   - Saving transcriptions in MD files alongside audio files
   - Cache files are stored in the same directory
   - Improved error handling and logging
+- New orchestrator module to coordinate fetch, convert, and process operations:
+  - Single command to process a webpage end-to-end
+  - Detailed progress logging
+  - Comprehensive error handling
+  - Returns paths to all generated files
+- New `snack` command for one-step webpage processing
+- Added orchestrator documentation to README.md
+- Automatic Puppeteer fallback in orchestrator when Cloudflare protection is detected:
+  - First attempts standard fetch with Cloudflare headers
+  - If Cloudflare protection is detected, automatically retries with Puppeteer
+  - Uses increased timeouts and wait times for automatic fallback
+  - Still allows explicit Puppeteer usage via --puppeteer flag
 
 ### Fixed
 - Resolved duplicate ProcessorConfig interface definition
@@ -224,6 +236,22 @@ This document tracks the progress of the Site Snacker project compared to the or
 - New cost-tracker.ts module for tracking OpenAI API usage and costs
 - Cost estimation for GPT-4 Vision and Whisper API calls
 - Detailed cost breakdown in processing output
+- Automatic Puppeteer fallback in orchestrator when Cloudflare protection is detected:
+  - First attempts standard fetch with Cloudflare headers
+  - If Cloudflare protection is detected, automatically retries with Puppeteer
+  - Uses increased timeouts and wait times for automatic fallback
+  - Still allows explicit Puppeteer usage via --puppeteer flag
+- New orchestrator module to coordinate fetch, convert, and process operations:
+  - Single command to process a webpage end-to-end
+  - Detailed progress logging
+  - Comprehensive error handling
+  - Returns paths to all generated files
+- New `snack` command for one-step webpage processing
+- Added orchestrator documentation to README.md
+- Source URL reference at the top of processed markdown files:
+  - Added in format `[source: <url>]`
+  - Helps track origin of content
+  - Useful for organizing and combining multiple files
 
 ### Removed
 - Removed redundant test-fetcher.ts file

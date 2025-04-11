@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { urlToFilePath } from '../utils/url.js';
 import { mkdirp } from 'mkdirp';
+export { fetchWithPuppeteer } from './puppeteer';
 
 // Default browser-like headers to mimic a real browser
 const DEFAULT_HEADERS = {
