@@ -1,64 +1,67 @@
+import { expect, test, describe, beforeAll, afterAll } from 'bun:test';
 import { htmlToMarkdown, saveMarkdown, generateMetadata } from '../../src/converter/index.js';
 import { fetchHtml } from '../../src/fetcher/index.js';
+import { getDirectoryConfig } from '../../src/config/index.js';
 import * as fs from 'fs';
 import * as path from 'path';
 import { urlToFilePath } from '../../src/utils/url.js';
+import { cleanup } from '../setup.js';
 
-/**
- * Integration test for the converter module
- */
-async function testConverter() {
-  try {
-    console.log('Testing converter module...');
+describe('Converter Module', () => {
+  // Setup before tests
+  beforeAll(() => {
+    const dirConfig = getDirectoryConfig();
+    // Ensure test directories exist
+    const testDirs = [
+      path.join(dirConfig.base, 'output'),
+      path.join(dirConfig.base, 'cache'),
+      path.join(dirConfig.temp)
+    ];
     
+    for (const dir of testDirs) {
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+    }
+  });
+
+  // Cleanup after tests
+  afterAll(() => {
+    cleanup();
+  });
+
+  test('should convert HTML to markdown and save it', async () => {
     // Test URL
     const testUrl = 'https://example.com';
+    const dirConfig = getDirectoryConfig();
     
     // First run - should download HTML and convert to Markdown
-    console.log('First run - should download HTML and convert to Markdown');
     const html = await fetchHtml(testUrl);
-    console.log(`Downloaded HTML length: ${html.length} characters`);
+    expect(html).toBeDefined();
+    expect(html.length).toBeGreaterThan(0);
     
     // Convert HTML to Markdown
-    console.log('Converting HTML to Markdown...');
-    const markdown = await htmlToMarkdown(html);
-    console.log(`Generated Markdown length: ${markdown.length} characters`);
+    const markdown = await htmlToMarkdown(html, testUrl);
+    expect(markdown).toBeDefined();
+    expect(markdown.length).toBeGreaterThan(0);
     
     // Save Markdown to file
-    console.log('Saving Markdown to file...');
     const markdownPath = saveMarkdown(markdown, testUrl);
-    console.log(`Markdown saved to: ${markdownPath}`);
     
     // Generate metadata
-    console.log('Generating metadata...');
     const metadataPath = generateMetadata(markdown, testUrl);
-    console.log(`Metadata saved to: ${metadataPath}`);
     
     // Check if files were created
-    const markdownExists = fs.existsSync(markdownPath);
-    const metadataExists = fs.existsSync(metadataPath);
-    console.log(`Markdown file exists: ${markdownExists ? 'Yes' : 'No'}`);
-    console.log(`Metadata file exists: ${metadataExists ? 'Yes' : 'No'}`);
+    expect(fs.existsSync(markdownPath)).toBe(true);
+    expect(fs.existsSync(metadataPath)).toBe(true);
     
     // Second run - should use cached HTML and convert to Markdown
-    console.log('\nSecond run - should use cached HTML and convert to Markdown');
     const cachedHtml = await fetchHtml(testUrl);
-    console.log(`Cached HTML length: ${cachedHtml.length} characters`);
     
     // Convert cached HTML to Markdown
-    console.log('Converting cached HTML to Markdown...');
-    const cachedMarkdown = await htmlToMarkdown(cachedHtml);
-    console.log(`Generated Markdown length: ${cachedMarkdown.length} characters`);
+    const cachedMarkdown = await htmlToMarkdown(cachedHtml, testUrl);
     
     // Verify content is the same
-    const contentMatches = markdown === cachedMarkdown;
-    console.log(`Content matches: ${contentMatches ? 'Yes' : 'No'}`);
-    
-    console.log('\nConverter test completed successfully!');
-  } catch (error) {
-    console.error('Error testing converter:', error);
-  }
-}
-
-// Run the test
-testConverter(); 
+    expect(markdown).toBe(cachedMarkdown);
+  });
+}); 

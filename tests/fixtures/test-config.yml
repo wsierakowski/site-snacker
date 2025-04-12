@@ -1,4 +1,4 @@
-# Site Snacker Configuration
+# Test Configuration
 
 # OpenAI API Configuration
 openai:
@@ -64,12 +64,13 @@ converter:
 
 # Directory Configuration
 directories:
-  base: "."              # Base directory for all operations
+  base: "tests"          # Base directory for all test operations
   output:
-    base: "output"       # Base directory for output files
+    base: "tests/output"  # Base directory for output files
     processed: "pages"  # Directory for processed markdown files
     merged: "merged"     # Directory for merged output files
   temp: "tmp"           # Directory for temporary files and cache
+  cache: "tests/tmp"     # Cache directory for test environment
 
 # Sitemap Module Configuration
 sitemap:

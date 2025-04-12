@@ -124,6 +124,8 @@ This document tracks the progress of the Site Snacker project compared to the or
 ## [Unreleased]
 
 ### Changed
+- Updated output directory name from `processed` to `pages` in configuration and throughout the codebase to better reflect its purpose
+- Updated tests to work with the new directory structure, fixing issues in fetch-url.test.ts
 - Modified `convert-url.ts` to save markdown files to tmp directory instead of output
 - Improved file organization by keeping intermediate files in tmp directory
 - Fixed function name conflicts in processor module by removing local function declarations for `processImages` and `processAudio`

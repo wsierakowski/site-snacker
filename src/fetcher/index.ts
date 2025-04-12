@@ -93,9 +93,8 @@ export async function fetchHtml(
   } = options;
 
   // Convert URL to file path and create absolute cache path
-  const urlPath = urlToFilePath(url);
-  const cacheDir = path.join(process.cwd(), dirConfig.base, dirConfig.cache);
-  const filePath = path.join(cacheDir, urlPath);
+  const urlPath = urlToFilePath(url, dirConfig.temp);
+  const filePath = path.join(urlPath);
   const dirPath = path.dirname(filePath);
 
   // Check if cached content exists and should be used

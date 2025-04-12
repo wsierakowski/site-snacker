@@ -177,17 +177,11 @@ bun run process https://en.wikipedia.org/wiki/Golden_Gate_Bridge
 After running these commands, the tool will generate:
 
 ### Output Files
-The processed content will be available in the `output` directory:
 
-```
-output/
-├── processed/           # Individual processed files
-│   ├── [domain]/       # Organized by domain
-│   │   ├── page1.md    # Markdown with image descriptions
-│   │   └── page2.md    # and audio transcriptions
-└── merged/             # Combined documentation
-    └── sitemap.md      # All pages merged into one file
-```
+Site Snacker creates markdown files that capture the essence of the webpage:
+
+- **Individual Pages**: Each page is stored in `output/pages/[domain]/[path].md`
+- **Merged Content**: Optional combined markdown from sitemap processing stored in `output/merged/[sitemap-name]-merged.md`
 
 Each processed markdown file includes:
 - Clean, readable content
