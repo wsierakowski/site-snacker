@@ -49,18 +49,17 @@ export async function mergeMarkdownFiles(
     const content = fs.readFileSync(file.markdownPath, 'utf-8');
     
     // Check if the file contains image descriptions
-    const hasImageDescription = content.includes('<image_description>');
+    const hasImageDescription = content.includes('<md_image-description>');
     if (hasImageDescription) {
       console.log(`  - Found image descriptions in ${path.basename(file.markdownPath)}`);
       
       // Count the number of image descriptions
-      const imageDescriptionCount = (content.match(/<image_description>/g) || []).length;
+      const imageDescriptionCount = (content.match(/<md_image-description>/g) || []).length;
       console.log(`  - Number of image descriptions: ${imageDescriptionCount}`);
     }
     
     // Add section header with original URL
     mergedContent += `## ${path.basename(file.markdownPath, '.md')}\n\n`;
-    mergedContent += `URL: ${file.url}\n\n`;
     
     // IMPORTANT: Use the processed file instead of the markdown file
     // The processed file already contains the image descriptions
@@ -74,7 +73,11 @@ export async function mergeMarkdownFiles(
     if (fs.existsSync(processedPath)) {
       console.log(`  - Using processed file: ${processedPath}`);
       const processedContent = fs.readFileSync(processedPath, 'utf-8');
-      mergedContent += processedContent;
+      
+      // Remove the redundant [source: URL] line since we already have the URL in the md_html-source tag
+      const contentWithoutSource = processedContent.replace(/^\[source: .+\]\n\n/, '');
+      
+      mergedContent += contentWithoutSource;
     } else {
       console.log(`  - Processed file not found, using markdown file`);
       mergedContent += content;
@@ -87,7 +90,7 @@ export async function mergeMarkdownFiles(
   }
 
   // Verify that image descriptions are preserved in the merged content
-  const mergedImageDescriptionCount = (mergedContent.match(/<image_description>/g) || []).length;
+  const mergedImageDescriptionCount = (mergedContent.match(/<md_image-description>/g) || []).length;
   console.log(`\nTotal image descriptions in merged content: ${mergedImageDescriptionCount}`);
 
   // Save merged content

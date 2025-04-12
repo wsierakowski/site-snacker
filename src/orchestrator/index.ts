@@ -25,6 +25,13 @@ export interface SitemapOrchestrationResult {
   results: OrchestrationResult[];
   totalCostSummary: string;
   mergedMarkdownPath?: string;
+  failedUrls: FailedUrl[];
+}
+
+export interface FailedUrl {
+  url: string;
+  error: string;
+  retryCommand: string;
 }
 
 /**
@@ -55,6 +62,7 @@ export async function orchestrate(
       console.log(`Found ${urls.length} URLs in sitemap`);
       
       const results: OrchestrationResult[] = [];
+      const failedUrls: FailedUrl[] = [];
       let totalCostSummary = '';
       let successCount = 0;
       let failureCount = 0;
@@ -77,6 +85,15 @@ export async function orchestrate(
         } catch (error: any) {
           console.error(`Error processing URL ${pageUrl}:`, error.message);
           failureCount++;
+          
+          // Track failed URL with error details and retry command
+          const retryCommand = `bun run snack "${pageUrl}" --timeout=${options.timeout || fetcherConfig.cloudflare.timeout * 2}`;
+          failedUrls.push({
+            url: pageUrl,
+            error: error.message,
+            retryCommand
+          });
+          
           // Continue with next URL even if one fails
         }
       }
@@ -86,29 +103,44 @@ export async function orchestrate(
       console.log(`Total URLs: ${urls.length}`);
       console.log(`Successfully processed: ${successCount}`);
       console.log(`Failed: ${failureCount}`);
-      console.log('\nTotal Cost Summary:');
-      console.log(totalCostSummary);
+      
+      if (totalCostSummary) {
+        console.log('\nOpenAI API Usage Summary:');
+        console.log('------------------------');
+        console.log(totalCostSummary);
+      }
+
+      // Print error report if there were failures
+      if (failedUrls.length > 0) {
+        console.log('\n=== Error Report ===');
+        console.log(`${failedUrls.length} out of ${urls.length} URLs failed to process.`);
+        console.log('\nFailed URLs:');
+        failedUrls.forEach((failedUrl, index) => {
+          console.log(`\n${index + 1}. ${failedUrl.url}`);
+          console.log(`   Error: ${failedUrl.error}`);
+          console.log(`   Retry command: ${failedUrl.retryCommand}`);
+        });
+        console.log('\nTo retry failed URLs, run the commands above. The timeout has been doubled to help with slow-loading pages.');
+      }
 
       // Merge markdown files if requested
       let mergedMarkdownPath: string | undefined;
       if (options.mergeMarkdown !== false) { // Default to true
+        console.log('\n=== Merging Markdown Files ===');
         const filesToMerge = results.map(r => ({
           markdownPath: r.markdownPath,
           url: r.url
         }));
         const sitemapName = path.basename(url, path.extname(url));
-        mergedMarkdownPath = path.join(
-          dirConfig.output.base,
-          dirConfig.output.merged,
-          `${sitemapName}-merged.md`
-        );
+        mergedMarkdownPath = path.join(dirConfig.output.base, dirConfig.output.merged, `${sitemapName}-merged.md`);
         await mergeMarkdownFiles(filesToMerge, mergedMarkdownPath, url);
       }
       
       return {
         results,
         totalCostSummary,
-        mergedMarkdownPath
+        mergedMarkdownPath,
+        failedUrls
       };
     } else {
       // Process single URL
@@ -200,7 +232,7 @@ async function processUrl(
 
   // Step 2: Convert to Markdown
   console.log('\n=== Step 2: Converting to Markdown ===');
-  const markdown = await htmlToMarkdown(html);
+  const markdown = await htmlToMarkdown(html, url);
 
   // Save Markdown content
   fs.writeFileSync(markdownPath, markdown);
@@ -214,19 +246,13 @@ async function processUrl(
     markdownPath
   );
 
-  // Add source URL at the top of the processed markdown
-  const markdownWithSource = `[source: ${url}]\n\n${processedMarkdown}`;
-
-  // Save processed markdown
-  fs.writeFileSync(processedPath, markdownWithSource);
+  // Save processed markdown without adding the redundant source URL line
+  fs.writeFileSync(processedPath, processedMarkdown);
 
   console.log('\n=== Processing Complete ===');
   console.log('HTML cached at:', htmlPath);
   console.log('Markdown saved at:', markdownPath);
   console.log('Processed markdown saved at:', processedPath);
-  console.log('\nOpenAI API Usage Summary:');
-  console.log('------------------------');
-  console.log(costSummary);
 
   return {
     htmlPath,

@@ -31,7 +31,7 @@ async function main() {
     
     // Convert HTML to Markdown
     console.log('Converting HTML to Markdown...');
-    const markdown = await htmlToMarkdown(html);
+    const markdown = await htmlToMarkdown(html, url);
     
     // Save Markdown to tmp directory
     console.log('Saving Markdown to tmp directory...');

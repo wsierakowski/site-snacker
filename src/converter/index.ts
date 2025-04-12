@@ -29,10 +29,11 @@ function ensureDirectoryExists(dirPath: string): void {
 /**
  * Converts HTML content to Markdown
  * @param html The HTML content to convert
+ * @param url The URL of the original HTML content
  * @returns The Markdown content
  * @throws Error if parsing fails
  */
-export async function htmlToMarkdown(html: string): Promise<string> {
+export async function htmlToMarkdown(html: string, url: string): Promise<string> {
   try {
     const dom = new JSDOM(html);
     const document = dom.window.document;
@@ -116,7 +117,14 @@ export async function htmlToMarkdown(html: string): Promise<string> {
     
     // Combine breadcrumbs with article content
     const markdown = breadcrumbMarkdown + turndownService.turndown(article.content);
-    return markdown;
+    
+    // Add HTML source tag with just the URL
+    const htmlSourceTag = `<md_html-source>\n${url}\n</md_html-source>\n\n`;
+    
+    // Add HTML title tag
+    const htmlTitleTag = `<md_html-title>\n${article.title}\n</md_html-title>\n\n`;
+    
+    return htmlSourceTag + htmlTitleTag + markdown;
   } catch (error: any) {
     throw new Error(`Failed to convert HTML to Markdown: ${error.message}`);
   }

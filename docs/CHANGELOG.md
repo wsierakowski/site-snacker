@@ -275,6 +275,13 @@ This document tracks the progress of the Site Snacker project compared to the or
   - Made pricing information configurable and maintainable
   - Improved type safety for pricing configuration
   - Fixed property name consistency (perMinute → per_minute)
+- Updated tag naming convention to use `md_` prefix for all custom tags:
+  - `<breadcrumb>` → `<md_breadcrumb>`
+  - `<image_description>` → `<md_image-description>`
+  - `<audio_transcript>` → `<md_audio-transcript>`
+  - Added new `<md_html-source>` tag
+- Improved error handling in sitemap processing
+- Enhanced caching system for processed content
 
 ### Fixed
 - Resolved duplicate ProcessorConfig interface definition
@@ -295,6 +302,8 @@ This document tracks the progress of the Site Snacker project compared to the or
   - Updated image and audio processors to import config directly
   - Fixed costTracker initialization in each module
   - Improved module organization for better dependency management
+- Fixed directory structure to ensure processed and merged files are in the output directory
+- Fixed error handling in the processor module
 
 ### Added
 - Implemented audio processing functionality in content processor module
@@ -326,6 +335,8 @@ This document tracks the progress of the Site Snacker project compared to the or
 - Centralized configuration system using `site-snacker.config.yml`
 - Documentation for configuration system in README.md
 - Environment variables support for sensitive settings
+- Added error reporting for failed URLs in sitemap processing
+- Added HTML source tag to markdown output
 
 ### Removed
 - Removed redundant test-fetcher.ts file
@@ -376,3 +387,14 @@ This document tracks the progress of the Site Snacker project compared to the or
 - Added examples for different sitemap types
 - Added best practices for large sitemaps
 - Added image description preservation documentation
+
+## [0.1.0] - 2023-01-01
+
+### Added
+- Initial release
+- Basic HTML to Markdown conversion
+- Image description generation using OpenAI Vision API
+- Audio transcription using OpenAI Whisper API
+- Sitemap processing
+- Cloudflare protection handling
+- Caching system for downloaded content

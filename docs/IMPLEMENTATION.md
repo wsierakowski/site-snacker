@@ -15,6 +15,9 @@
 - Custom table conversion rules for proper formatting
 - Breadcrumb extraction and conversion
 - Proper escaping of special characters
+- Standardized tag naming convention with `md_` prefix
+- HTML source URL preservation in markdown output
+- HTML title preservation in markdown output
 
 ### Processor Module
 - OpenAI Vision API for image descriptions
@@ -100,46 +103,65 @@ The application uses a centralized configuration system through `site-snacker.co
 ```yaml
 # OpenAI API Configuration
 openai:
-  apiKey: ${OPENAI_API_KEY}
-  models:
-    gpt4o:
-      name: "gpt-4o"
-      pricing:
-        input: 0.00001
-        output: 0.00003
-    gpt4oMini:
-      name: "gpt-4o-mini"
-      pricing:
-        input: 0.000005
-        output: 0.000015
-    whisper:
-      name: "whisper-1"
-      pricing: 0.006
+  # API key is read from .env file
+  pricing:
+    gpt-4o:
+      input: 0.005   # $5 per 1M input tokens ($0.005 per 1K tokens)
+      output: 0.015  # $15 per 1M output tokens ($0.015 per 1K tokens)
+    gpt-4o-mini:
+      input: 0.00015 # $0.15 per 1M input tokens ($0.00015 per 1K tokens)
+      output: 0.0006 # $0.60 per 1M output tokens ($0.0006 per 1K tokens)
+    whisper-1:
+      per_minute: 0.006  # $0.006 per minute of audio
 
-# Module-specific Settings
+# Processor Module Configuration
 processor:
+  # Image Processing Configuration
   image:
-    model: "gpt-4o"
+    model: "gpt-4o-mini"  # Using gpt-4o-mini for image processing
+    max_tokens: 500
     prompt: "Describe this image in detail..."
+    markdown:
+      description_tag: "md_image-description"
+      error_prefix: "⚠️"
+    directory: "images"
+
+  # Audio Processing Configuration
   audio:
     model: "whisper-1"
     language: "en"
+    response_format: "text"
+    markdown:
+      transcript_tag: "md_audio-transcript"
+      error_prefix: "⚠️"
+    directory: "audio"
 
+# Fetcher Module Configuration
 fetcher:
-  http:
+  cloudflare:
+    wait_time: 15000
     timeout: 60000
-    retries: 3
+    auto_detect: true
   puppeteer:
-    timeout: 120000
-    headless: true
+    viewport:
+      width: 1920
+      height: 1080
+    user_agent: "Mozilla/5.0..."
+    headers:
+      accept_language: "en-US,en;q=0.9"
+      accept: "text/html,application/xhtml+xml..."
+  cache:
+    enabled: true
+    skip_domains: []
 
+# Converter Module Configuration
 converter:
-  tableRules: true
-  breadcrumbs: true
-
-merger:
-  preserveImages: true
-  addMetadata: true
+  readability:
+    use_reader_mode: true
+  markdown:
+    preserve_tables: true
+    preserve_links: true
+    preserve_images: true
 
 # Directory Configuration
 directories:
@@ -151,11 +173,17 @@ directories:
   temp: "tmp"
   cache: "cache"
 
-# Cost Tracking
-costTracking:
+# Sitemap Module Configuration
+sitemap:
+  auto_merge: true
+  parallel: false
+  max_concurrent: 5
+
+# Cost Tracking Configuration
+cost_tracking:
   enabled: true
-  warningThreshold: 1.0
-  errorThreshold: 5.0
+  warn_threshold: 10.0
+  stop_threshold: 50.0
 ```
 
 ### Configuration Usage
@@ -164,6 +192,7 @@ costTracking:
 - Directory paths are configurable but have sensible defaults
 - Cost tracking can be enabled/disabled and thresholds configured
 - Module-specific settings can be customized as needed
+- Tag naming convention is standardized with the `md_` prefix
 
 ## Error Handling
 - Network error recovery

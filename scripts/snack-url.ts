@@ -50,6 +50,26 @@ async function main() {
         console.log('\nMerged Markdown:');
         console.log(`All pages have been merged into: ${result.mergedMarkdownPath}`);
       }
+      
+      // Display a clear summary of any errors that require retry
+      if (result.failedUrls && result.failedUrls.length > 0) {
+        console.log('\n=== ERROR SUMMARY ===');
+        console.log(`${result.failedUrls.length} URLs failed to process and need to be retried:`);
+        console.log('----------------------------------------');
+        
+        result.failedUrls.forEach((failedUrl, index) => {
+          console.log(`${index + 1}. ${failedUrl.url}`);
+          console.log(`   Error: ${failedUrl.error}`);
+          console.log(`   Retry command: ${failedUrl.retryCommand}`);
+          console.log('----------------------------------------');
+        });
+        
+        console.log('\nTo retry these URLs, run the commands above.');
+        console.log('The timeout has been doubled to help with slow-loading pages.');
+      } else {
+        console.log('\n=== SUCCESS ===');
+        console.log('All URLs were processed successfully!');
+      }
     }
     
     process.exit(0);

@@ -152,7 +152,19 @@ class ConfigLoader {
   public getOpenAIConfig() {
     return this.config.openai;
   }
+
+  // Load configuration from a specific file (for testing)
+  public loadConfig(configPath: string) {
+    if (!fs.existsSync(configPath)) {
+      throw new Error(`Configuration file not found: ${configPath}`);
+    }
+    const configFile = fs.readFileSync(configPath, 'utf8');
+    this.config = load(configFile) as SiteSnackerConfig;
+  }
 }
+
+// Export the ConfigLoader class for testing
+export { ConfigLoader };
 
 // Export a singleton instance
 export const config = ConfigLoader.getInstance();

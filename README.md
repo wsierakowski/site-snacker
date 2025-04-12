@@ -195,6 +195,18 @@ Each processed markdown file includes:
 - Audio transcriptions (if available)
 - Original source URL reference
 - Generation timestamp
+- HTML source code (for reference)
+
+### Custom Tags
+Site Snacker uses a standardized tag naming convention with the `md_` prefix for all custom tags:
+
+- `<md_breadcrumb>` - Contains the page's breadcrumb navigation
+- `<md_image-description>` - Contains AI-generated descriptions of images
+- `<md_audio-transcript>` - Contains AI-generated transcriptions of audio content
+- `<md_html-source>` - Contains the URL to the original HTML page
+- `<md_html-title>` - Contains the title of the original HTML page
+
+These tags are preserved in the merged output and can be used for post-processing or integration with other tools.
 
 The merged output preserves all these features while combining multiple pages into a single document, perfect for use with AI assistants like ChatGPT or Claude.
 
@@ -259,9 +271,28 @@ The script implements a smart caching and retry system:
   - When retrying a failed sitemap URL, if successful:
     - A new merged markdown file is automatically created
     - Includes all previously successful pages (from cache)
-    - Includes the newly successful page
     - Maintains the original order and formatting
-  - No need to manually remerge after retrying failed URLs
+    - No manual intervention needed
+
+- **Error Reporting**:
+  - After processing a sitemap, a detailed error report is generated
+  - Shows the number of failed URLs and their specific errors
+  - Provides ready-to-use retry commands for each failed URL
+  - Automatically suggests increased timeout for slow-loading pages
+  - Example error report:
+    ```
+    === Error Report ===
+    2 out of 10 URLs failed to process.
+
+    Failed URLs:
+    1. https://example.com/page1.html
+      Error: Timeout after 60000ms
+      Retry command: bun run snack "https://example.com/page1.html" --timeout=120000
+
+    2. https://example.com/page2.html
+      Error: Cloudflare challenge failed
+      Retry command: bun run snack "https://example.com/page2.html" --timeout=120000
+    ```
 
 This ensures efficient processing of large sitemaps, as only problematic URLs need to be retried.
 

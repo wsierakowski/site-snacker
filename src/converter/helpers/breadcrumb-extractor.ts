@@ -81,5 +81,5 @@ export function breadcrumbsToMarkdown(breadcrumbs: Breadcrumb[]): string {
     return crumb.text;
   });
 
-  return `<breadcrumb>\n> ${parts.join(' > ')}\n</breadcrumb>\n\n`;
+  return `<md_breadcrumb>\n> ${parts.join(' > ')}\n</md_breadcrumb>\n\n`;
 } 

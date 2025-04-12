@@ -49,7 +49,7 @@ async function main() {
     const baseUrl = input.replace(/\.html$/, '');
     const { content: processedMarkdown, costSummary } = await processMarkdownContent(markdown, baseUrl, outputDir, markdownPath);
 
-    // Save processed markdown
+    // Save processed markdown without adding the redundant source URL line
     const processedPath = path.join(outputDir, path.basename(markdownPath));
     await fs.promises.writeFile(processedPath, processedMarkdown);
 

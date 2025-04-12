@@ -3,11 +3,12 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { urlToFilePath } from '../utils/url.js';
 import { mkdirp } from 'mkdirp';
-import { getFetcherConfig } from '../config';
+import { getFetcherConfig, getDirectoryConfig } from '../config';
 export { fetchWithPuppeteer } from './puppeteer';
 
 // Get configuration
 const config = getFetcherConfig();
+const dirConfig = getDirectoryConfig();
 
 // Default browser-like headers to mimic a real browser
 const DEFAULT_HEADERS = {
@@ -91,8 +92,10 @@ export async function fetchHtml(
     useCloudflareHeaders = config.cloudflare.auto_detect
   } = options;
 
-  // Convert URL to file path
-  const filePath = urlToFilePath(url);
+  // Convert URL to file path and create absolute cache path
+  const urlPath = urlToFilePath(url);
+  const cacheDir = path.join(process.cwd(), dirConfig.base, dirConfig.cache);
+  const filePath = path.join(cacheDir, urlPath);
   const dirPath = path.dirname(filePath);
 
   // Check if cached content exists and should be used

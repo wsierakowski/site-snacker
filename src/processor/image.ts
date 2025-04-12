@@ -304,7 +304,7 @@ async function generateImageDescription(imagePath: string, altText: string, cont
     const imageBuffer = fs.readFileSync(imagePath);
     const base64Image = imageBuffer.toString('base64');
     
-    console.log('Calling OpenAI Vision API...');
+    console.log('Calling OpenAI API for image description...');
     const response = await openai.chat.completions.create({
       model: config.model,
       messages: [
@@ -325,7 +325,7 @@ async function generateImageDescription(imagePath: string, altText: string, cont
     });
 
     // Track the API cost
-    costTracker.trackVisionAPI(response);
+    costTracker.trackImageAPI(response);
     
     return response.choices[0].message.content || 'No description generated';
   } catch (error) {
