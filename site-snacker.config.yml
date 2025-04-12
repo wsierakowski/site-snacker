@@ -19,7 +19,7 @@ processor:
   image:
     model: "gpt-4o-mini"  # Using gpt-4o-mini for image processing
     max_tokens: 500
-    prompt: "Describe this image in detail. If it's a UI screenshot, describe the interface elements. If it's a diagram, represent it as a mermaid, websequence, puml or ascii diagram, use ASCII or markdown to explain what it represents. Alt text: {altText}"
+    prompt: "Describe this image concisely. For icons and UI elements, provide a brief functional description (e.g., 'Plus icon for adding items'). For screenshots, describe key UI elements. For diagrams, use ASCII/markdown to explain what it represents. Keep descriptions under 2 sentences unless it's a complex diagram. Alt text: {altText}"
     markdown:
       description_tag: "md_image-description"  # Will be wrapped in < >
       error_prefix: "⚠️"
