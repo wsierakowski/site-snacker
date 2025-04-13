@@ -30,15 +30,17 @@ Site Snacker is a TypeScript-based tool that converts HTML websites into clean, 
   - Convert HTML to Markdown
   - Handle special elements (tables, lists, etc.)
   - Preserve breadcrumbs and source information
+  - Use standardized tag naming convention with `md_` prefix
+  - Include source references in custom tags for media content
 
 ### 3. Content Processor Module
 - **Purpose**: Process images and audio in the markdown content
 - **Implementation**:
   - Identify image tags in markdown
   - Send images to OpenAI Vision API for description
-  - Format image descriptions in markdown
+  - Format image descriptions in markdown with source references
   - Identify audio elements and generate transcriptions using Whisper API
-  - Format audio transcriptions in markdown
+  - Format audio transcriptions in markdown with source references
   - Track API costs and implement safety limits
   - Smart image caching system:
     - Calculate checksums for image deduplication

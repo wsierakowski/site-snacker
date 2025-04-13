@@ -99,7 +99,7 @@ export async function processAudio(
         
         if (cachedData && cachedData.model === config.model) {
           console.log('Using cached transcription from:', path.join(pageDir, cacheKey));
-          const audioWithTranscription = `${fullMatch}\n\n<${config.markdown.transcript_tag}>${cachedData.transcription}</${config.markdown.transcript_tag}>\n\n`;
+          const audioWithTranscription = `${fullMatch}\n\n<${config.markdown.transcript_tag} src="${resolvedAudioUrl}">${cachedData.transcription}</${config.markdown.transcript_tag}>\n\n`;
           processedMarkdown = processedMarkdown.replace(fullMatch, audioWithTranscription);
           continue;
         }
@@ -145,7 +145,7 @@ export async function processAudio(
           }
         }
         
-        const audioWithTranscription = `${fullMatch}\n\n<${config.markdown.transcript_tag}>${transcription}</${config.markdown.transcript_tag}>\n\n`;
+        const audioWithTranscription = `${fullMatch}\n\n<${config.markdown.transcript_tag} src="${resolvedAudioUrl}">${transcription}</${config.markdown.transcript_tag}>\n\n`;
         processedMarkdown = processedMarkdown.replace(fullMatch, audioWithTranscription);
         
         // Save transcription to cache in the page directory

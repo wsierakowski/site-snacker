@@ -35,6 +35,8 @@ This document tracks the progress of the Site Snacker project compared to the or
   - Added checkmarks (✅) to completed implementation phases
   - Updated configuration details to reflect YAML format
   - Added details about the directory structure with domain-based organization
+  - Added information about standardized tag naming convention with `md_` prefix
+  - Added details about source references in custom tags for media content
 - Updated README.md to reflect the correct directory structure:
   - Clarified that processed files are organized by domain
   - Enhanced the configuration section with more details
@@ -86,6 +88,17 @@ This document tracks the progress of the Site Snacker project compared to the or
 - Improved table cell formatting to add spacing between descriptions and examples
 
 ### Content Processor Module
+- Implemented image processing with OpenAI Vision API
+- Added audio transcription with OpenAI Whisper API
+- Implemented cost tracking for API usage
+- Added MediaRegistry for tracking and deduplicating media files
+- Enhanced custom tags with source references:
+  - Added src attribute to md_image-description tags
+  - Added src attribute to md_audio-transcript tags
+  - Updated documentation to reflect these changes
+- Implemented content-based hashing for efficient caching
+- Added automatic backup of registry files
+- Implemented cross-page media reuse to minimize API costs
 
 ### Caching System
 - Implemented file-based caching for image descriptions

@@ -200,7 +200,7 @@ export async function processImages(
       
       if (cachedData && cachedData.model === config.model) {
         console.log('Using cached description from:', path.join(pageDir, cacheKey));
-        const imageWithDescription = `${fullMatch}\n\n<${config.markdown.description_tag}>${cachedData.description}</${config.markdown.description_tag}>\n\n`;
+        const imageWithDescription = `${fullMatch}\n\n<${config.markdown.description_tag} src="${resolvedImageUrl}">${cachedData.description}</${config.markdown.description_tag}>\n\n`;
         processedMarkdown = processedMarkdown.replace(fullMatch, imageWithDescription);
         continue;
       }
@@ -291,7 +291,7 @@ export async function processImages(
         }
       }
       
-      const imageWithDescription = `${fullMatch}\n\n<${config.markdown.description_tag}>${description}</${config.markdown.description_tag}>\n\n`;
+      const imageWithDescription = `${fullMatch}\n\n<${config.markdown.description_tag} src="${resolvedImageUrl}">${description}</${config.markdown.description_tag}>\n\n`;
       processedMarkdown = processedMarkdown.replace(fullMatch, imageWithDescription);
       
       // Save description to cache in the page directory

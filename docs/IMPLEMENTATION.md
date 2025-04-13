@@ -128,6 +128,21 @@ The `media-registry.json` file contains a structured record of all processed med
 }
 ```
 
+### Custom Tags with Source References
+Site Snacker uses custom tags with source references to clearly associate descriptions and transcriptions with their original media files:
+
+```markdown
+![Image alt text](https://example.com/image.png)
+
+<md_image-description src="https://example.com/image.png">AI-generated description of the image</md_image-description>
+
+[Audio link text](https://example.com/audio.mp3)
+
+<md_audio-transcript src="https://example.com/audio.mp3">AI-generated transcription of the audio</md_audio-transcript>
+```
+
+This approach ensures that each description or transcription is explicitly linked to its source media file, making it easier to understand which description corresponds to which image or audio file, especially in complex documents with multiple media elements.
+
 ### Source Code (`src/`)
 ```
 src/
