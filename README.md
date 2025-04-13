@@ -25,6 +25,51 @@ Site Snacker is a powerful tool that transforms web content into clean, accessib
   - Stores AI-generated descriptions and transcriptions
   - Skips re-processing of already processed content
   - Saves on API costs by reusing cached results
+  - Smart image deduplication:
+    - Uses checksums to identify duplicate images across pages
+    - Maintains a central registry of image descriptions
+    - Reuses AI-generated descriptions for identical images
+    - Provides insights into image usage across pages
+
+### Image Deduplication and Caching
+
+Site Snacker implements a smart image deduplication system to optimize storage and API costs:
+
+- **Checksum-based Detection**: 
+  - Calculates unique checksums for each image
+  - Identifies identical images even with different filenames
+  - Maintains a central registry in `tmp/media-registry.json`
+
+- **Description Reuse**:
+  - Stores AI-generated descriptions with image checksums
+  - Automatically reuses descriptions for identical images
+  - Significantly reduces OpenAI API costs
+  - Ensures consistent descriptions across pages
+
+- **Usage Analytics**:
+  - Tracks where each image appears across pages
+  - Provides insights into image reuse patterns
+  - Helps identify opportunities for content optimization
+  - Example cache entry:
+    ```json
+    {
+      "<image-hash>": {
+        "description": "AI-generated description",
+        "occurrences": [
+          {
+            "pagePath": "tmp/page1/images/image1.png",
+            "originalUrl": "https://example.com/image1.png"
+          },
+          {
+            "pagePath": "tmp/page2/images/different-name.png",
+            "originalUrl": "https://example.com/different-name.png"
+          }
+        ]
+      }
+    }
+    ```
+
+This system ensures that each unique image is processed only once, regardless of how many times it appears across different pages.
 
 Built with TypeScript and Bun for optimal performance and developer experience.
 

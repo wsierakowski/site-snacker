@@ -7,6 +7,7 @@ import { TranscriptionCreateParams } from 'openai/resources/audio/transcriptions
 import { downloadFile } from '../utils/download.js';
 import { getProcessorConfig } from '../config';
 import { CostTracker } from './cost-tracker';
+import { MediaRegistry } from './registry';
 
 // Get configuration from the centralized config
 const config = getProcessorConfig().audio;
@@ -22,6 +23,13 @@ const openai = new OpenAI({
 
 // Initialize cost tracker
 const costTracker = new CostTracker();
+
+// Initialize media registry
+const mediaRegistry = new MediaRegistry({
+  registryPath: 'tmp/media-registry.json',
+  autoSave: true,
+  backupOld: true
+});
 
 /**
  * Process audio in markdown content
@@ -110,26 +118,43 @@ export async function processAudio(
         fs.writeFileSync(audioPath, result.buffer);
         console.log('Audio saved to:', audioPath);
         
-        // Generate transcription using OpenAI's API
-        console.log('Generating audio transcription...');
-        try {
-          const transcription = await generateAudioTranscription(audioPath, linkText);
-          const audioWithTranscription = `${fullMatch}\n\n<${config.markdown.transcript_tag}>${transcription}</${config.markdown.transcript_tag}>\n\n`;
-          processedMarkdown = processedMarkdown.replace(fullMatch, audioWithTranscription);
-          
-          // Save transcription to cache in the page directory
-          saveTranscriptionToCache(cacheKey, pageDir, transcription, config.model);
-          
-          // Save transcription to a separate file in the page directory
-          const transcriptionPath = path.join(pageDir, audioFileName.replace(/\.[^.]+$/, '.md'));
-          saveTranscriptionToFile(transcriptionPath, transcription, linkText);
-          console.log('Transcription generated and cached successfully');
-        } catch (aiError: any) {
-          console.error('Error generating audio transcription:', aiError.message);
-          // Add a note about the failed AI transcription but keep the audio
-          const errorNote = `${fullMatch}\n\n<${config.markdown.transcript_tag}>Error generating transcription: ${aiError.message}</${config.markdown.transcript_tag}>\n\n`;
-          processedMarkdown = processedMarkdown.replace(fullMatch, errorNote);
+        // Check if this audio is already in the registry
+        const registryEntry = mediaRegistry.getEntry(audioPath);
+        let transcription: string;
+        
+        if (registryEntry) {
+          console.log('Using transcription from registry for:', audioPath);
+          transcription = registryEntry.content;
+        } else {
+          // Generate transcription using OpenAI's API
+          console.log('Generating audio transcription...');
+          try {
+            transcription = await generateAudioTranscription(audioPath, linkText);
+            
+            // Add to registry
+            mediaRegistry.addEntry(
+              audioPath,
+              'audio',
+              transcription,
+              { originalUrl: resolvedAudioUrl },
+              costTracker.getLastAudioCost()
+            );
+          } catch (aiError: any) {
+            console.error('Error generating audio transcription:', aiError.message);
+            transcription = `Error generating transcription: ${aiError.message}`;
+          }
         }
+        
+        const audioWithTranscription = `${fullMatch}\n\n<${config.markdown.transcript_tag}>${transcription}</${config.markdown.transcript_tag}>\n\n`;
+        processedMarkdown = processedMarkdown.replace(fullMatch, audioWithTranscription);
+        
+        // Save transcription to cache in the page directory
+        saveTranscriptionToCache(cacheKey, pageDir, transcription, config.model);
+        
+        // Save transcription to a separate file in the page directory
+        const transcriptionPath = path.join(pageDir, audioFileName.replace(/\.[^.]+$/, '.md'));
+        saveTranscriptionToFile(transcriptionPath, transcription, linkText);
+        console.log('Transcription saved successfully');
       } catch (error: any) {
         console.error(`Error processing audio ${audioCount}:`, error.message);
         if (error.response) {

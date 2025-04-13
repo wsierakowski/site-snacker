@@ -4,6 +4,9 @@ import OpenAI from 'openai';
 import { ensureDirectoryExists } from './utils';
 import { CostTracker } from './cost-tracker';
 import { getProcessorConfig, getOpenAIConfig } from '../config';
+import { processImages } from './image';
+import { processAudio } from './audio';
+import { MediaRegistry } from './registry';
 
 // Initialize OpenAI client
 if (!process.env.OPENAI_API_KEY) {
@@ -23,12 +26,15 @@ const config = {
   openai: getOpenAIConfig()
 };
 
+// Initialize media registry
+const mediaRegistry = new MediaRegistry({
+  registryPath: 'tmp/media-registry.json',
+  autoSave: true,
+  backupOld: true
+});
+
 // Export OpenAI client, config, and cost tracker for use in other modules
 export { openai, costTracker, config };
-
-// Import processor functions after config is initialized
-import { processImages } from './image';
-import { processAudio } from './audio';
 
 /**
  * Processes markdown content to handle images and audio

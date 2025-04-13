@@ -25,6 +25,10 @@
 - File-based caching system
 - Configurable model selection and prompts
 - Cost tracking and reporting
+- MediaRegistry for tracking and deduplicating media files
+- Content-based hashing for efficient caching
+- Automatic backup of registry files
+- Cross-page media reuse to minimize API costs
 
 ### Merger Module
 - Preserves image descriptions in merged output
@@ -47,21 +51,25 @@ The `tmp` directory stores all intermediate files and caches:
 
 ```
 tmp/
-└── [domain]/                    # Domain-specific content
+├── media-registry.json         # Central registry for all media files
+├── media-registry.json.backup  # Backup of the registry file
+└── [domain]/                   # Domain-specific content
     └── [path]/
-        ├── [filename].html      # Cached HTML content
-        ├── [filename].md        # Initial markdown conversion
-        └── [filename]/          # Asset directory
-            ├── uuid-xxxx.png    # Downloaded images
-            ├── uuid-xxxx.md     # Image descriptions
-            ├── uuid-xxxx.json   # Processing cache
-            ├── uuid-xxxx.mp3    # Audio files
-            └── uuid-xxxx.txt    # Audio transcriptions
+        ├── [filename].html     # Cached HTML content
+        ├── [filename].md       # Initial markdown conversion
+        └── [filename]/         # Asset directory
+            ├── uuid-xxxx.png   # Downloaded images
+            ├── uuid-xxxx.md    # Image descriptions
+            ├── uuid-xxxx.json  # Processing cache
+            ├── uuid-xxxx.mp3   # Audio files
+            └── uuid-xxxx.txt   # Audio transcriptions
 ```
 
 For example, processing `https://doc.sitecore.com/search/en/users/search-user-guide/attributes.html` creates:
 ```text
 tmp/
+├── media-registry.json         # Central registry for all media files
+├── media-registry.json.backup  # Backup of the registry file
 └── doc.sitecore.com/
     └── search/
         └── en/
@@ -73,6 +81,51 @@ tmp/
                         ├── uuid-xxxx.png    # Image
                         ├── uuid-xxxx.md     # Description
                         └── uuid-xxxx.json   # Cache
+```
+
+### Media Registry Structure
+The `media-registry.json` file contains a structured record of all processed media files:
+
+```json
+{
+  "version": "1.0",
+  "lastUpdated": "2023-06-15T12:34:56Z",
+  "entries": {
+    "hash-abc123def456": {
+      "type": "image",
+      "path": "tmp/doc.sitecore.com/search/en/users/search-user-guide/attributes/uuid-xxxx.png",
+      "content": "A screenshot showing the attributes configuration panel with various options...",
+      "metadata": {
+        "originalUrl": "https://doc.sitecore.com/images/attributes.png",
+        "altText": "Attributes configuration panel"
+      },
+      "apiCost": 0.00015,
+      "occurrences": [
+        "tmp/doc.sitecore.com/search/en/users/search-user-guide/attributes.md",
+        "tmp/doc.sitecore.com/search/en/users/search-user-guide/advanced-attributes.md"
+      ]
+    },
+    "hash-xyz789uvw123": {
+      "type": "audio",
+      "path": "tmp/doc.sitecore.com/search/en/users/search-user-guide/tutorial/uuid-yyyy.mp3",
+      "content": "This tutorial covers the basic setup of Sitecore Search...",
+      "metadata": {
+        "originalUrl": "https://doc.sitecore.com/audio/tutorial.mp3",
+        "linkText": "Tutorial Audio"
+      },
+      "apiCost": 0.006,
+      "occurrences": [
+        "tmp/doc.sitecore.com/search/en/users/search-user-guide/tutorial.md"
+      ]
+    }
+  },
+  "stats": {
+    "totalEntries": 42,
+    "imageEntries": 35,
+    "audioEntries": 7,
+    "totalApiCost": 0.125
+  }
+}
 ```
 
 ### Source Code (`src/`)

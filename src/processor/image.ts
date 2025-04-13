@@ -10,6 +10,7 @@ import { ChatCompletion } from 'openai/resources';
 import { URL } from 'url';
 import { getProcessorConfig } from '../config';
 import { CostTracker } from './cost-tracker';
+import { MediaRegistry } from './registry';
 
 // Get configuration from the centralized config
 const config = getProcessorConfig().image;
@@ -25,6 +26,13 @@ const openai = new OpenAI({
 
 // Initialize cost tracker
 const costTracker = new CostTracker();
+
+// Initialize media registry
+const mediaRegistry = new MediaRegistry({
+  registryPath: 'tmp/media-registry.json',
+  autoSave: true,
+  backupOld: true
+});
 
 interface ImageCache {
   description: string;
@@ -256,26 +264,43 @@ export async function processImages(
       fs.writeFileSync(imagePath, imageBuffer);
       console.log('Image saved to:', imagePath);
       
-      // Generate image description using OpenAI's Vision model
-      console.log('Generating image description...');
-      try {
-        const description = await generateImageDescription(imagePath, altText, contentType);
-        const imageWithDescription = `${fullMatch}\n\n<${config.markdown.description_tag}>${description}</${config.markdown.description_tag}>\n\n`;
-        processedMarkdown = processedMarkdown.replace(fullMatch, imageWithDescription);
-        
-        // Save description to cache in the page directory
-        saveToCache(cacheKey, pageDir, description, config.model);
-        
-        // Save description to a separate file in the page directory
-        const descriptionPath = path.join(pageDir, imageFileName.replace(/\.[^.]+$/, '.md'));
-        saveDescriptionToFile(descriptionPath, description, altText);
-        console.log('Description generated and cached successfully');
-      } catch (aiError: any) {
-        console.error('Error generating image description:', aiError.message);
-        // Add a note about the failed AI description but keep the image
-        const errorNote = `${fullMatch}\n\n<${config.markdown.description_tag}>Error generating description: ${aiError.message}</${config.markdown.description_tag}>\n\n`;
-        processedMarkdown = processedMarkdown.replace(fullMatch, errorNote);
+      // Check if this image is already in the registry
+      const registryEntry = mediaRegistry.getEntry(imagePath);
+      let description: string;
+      
+      if (registryEntry) {
+        console.log('Using description from registry for:', imagePath);
+        description = registryEntry.content;
+      } else {
+        // Generate image description using OpenAI's Vision model
+        console.log('Generating image description...');
+        try {
+          description = await generateImageDescription(imagePath, altText, contentType);
+          
+          // Add to registry
+          mediaRegistry.addEntry(
+            imagePath,
+            'image',
+            description,
+            { originalUrl: resolvedImageUrl },
+            costTracker.getLastImageCost()
+          );
+        } catch (aiError: any) {
+          console.error('Error generating image description:', aiError.message);
+          description = `Error generating description: ${aiError.message}`;
+        }
       }
+      
+      const imageWithDescription = `${fullMatch}\n\n<${config.markdown.description_tag}>${description}</${config.markdown.description_tag}>\n\n`;
+      processedMarkdown = processedMarkdown.replace(fullMatch, imageWithDescription);
+      
+      // Save description to cache in the page directory
+      saveToCache(cacheKey, pageDir, description, config.model);
+      
+      // Save description to a separate file in the page directory
+      const descriptionPath = path.join(pageDir, imageFileName.replace(/\.[^.]+$/, '.md'));
+      saveDescriptionToFile(descriptionPath, description, altText);
+      console.log('Description saved successfully');
     } catch (error: any) {
       console.error(`Error processing image ${imageCount}:`, error.message);
       if (error.response) {

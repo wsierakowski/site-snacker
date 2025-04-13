@@ -102,6 +102,14 @@ export class CostTracker {
 
     return summary;
   }
+
+  public getLastImageCost(): number {
+    return this.imageCosts.cost;
+  }
+
+  public getLastAudioCost(): number {
+    return this.audioCosts.cost;
+  }
 }
 
 /**

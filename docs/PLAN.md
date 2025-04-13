@@ -40,6 +40,45 @@ Site Snacker is a TypeScript-based tool that converts HTML websites into clean, 
   - Identify audio elements and generate transcriptions using Whisper API
   - Format audio transcriptions in markdown
   - Track API costs and implement safety limits
+  - Smart image caching system:
+    - Calculate checksums for image deduplication
+    - Maintain central image registry in tmp/image-cache.json
+    - Track image occurrences across pages
+    - Reuse AI-generated descriptions for identical images
+    - Provide analytics on image usage patterns
+
+### 3.1 Image Cache Registry
+- **Purpose**: Optimize storage and API costs through image deduplication
+- **Implementation**:
+  - Store in `tmp/image-cache.json`
+  - Structure:
+    ```typescript
+    interface ImageCache {
+      images: {
+        [hash: string]: {
+          description: string;
+          occurrences: Array<{
+            pagePath: string;
+            originalUrl: string;
+          }>;
+          firstProcessed: string;
+          lastUsed: string;
+        };
+      };
+      stats: {
+        totalImages: number;
+        uniqueImages: number;
+        duplicateCount: number;
+        lastUpdated: string;
+      };
+    }
+    ```
+  - Functions:
+    - Calculate image checksums
+    - Check for existing descriptions
+    - Update occurrence records
+    - Generate usage statistics
+    - Maintain cache integrity
 
 ### 4. Merger Module
 - **Purpose**: Combine multiple markdown files into a single document
