@@ -42,6 +42,29 @@ export async function htmlToMarkdown(html: string, url: string): Promise<string>
     const breadcrumbs = extractBreadcrumbs(html);
     const breadcrumbMarkdown = breadcrumbsToMarkdown(breadcrumbs);
     
+    // Extract last modification date from HTML
+    let lastModifiedDate = '';
+    
+    // Try to find lastmod in data-timemodified attribute
+    const timeModifiedElement = document.querySelector('[data-timemodified]');
+    if (timeModifiedElement) {
+      lastModifiedDate = timeModifiedElement.getAttribute('data-timemodified') || '';
+    }
+    
+    // If not found, try to find lastmod in data-publicationdate attribute
+    if (!lastModifiedDate) {
+      const publicationDateElement = document.querySelector('[data-publicationdate]');
+      if (publicationDateElement) {
+        lastModifiedDate = publicationDateElement.getAttribute('data-publicationdate') || '';
+      }
+    }
+    
+    // If still not found, use current date as fallback
+    if (!lastModifiedDate) {
+      const now = new Date();
+      lastModifiedDate = now.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+    }
+    
     const reader = new Readability(document);
     const article = reader.parse();
     
@@ -124,7 +147,10 @@ export async function htmlToMarkdown(html: string, url: string): Promise<string>
     // Add HTML title tag
     const htmlTitleTag = `<md_html-title>\n${article.title}\n</md_html-title>\n\n`;
     
-    return htmlSourceTag + htmlTitleTag + markdown;
+    // Add last modified date tag
+    const lastModifiedTag = `<md_last-modified>\n${lastModifiedDate}\n</md_last-modified>\n\n`;
+    
+    return htmlSourceTag + htmlTitleTag + lastModifiedTag + markdown;
   } catch (error: any) {
     throw new Error(`Failed to convert HTML to Markdown: ${error.message}`);
   }

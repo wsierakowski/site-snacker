@@ -89,6 +89,11 @@ describe('convert-url.ts script integration test', () => {
       // Check that the markdown file contains markdown content
       const markdownContent = fs.readFileSync(actualMarkdownPath, 'utf-8');
       expect(markdownContent).toContain('Example Domain');
+      
+      // Verify that the markdown contains the expected tags
+      expect(markdownContent).toContain('<md_html-source>');
+      expect(markdownContent).toContain('<md_html-title>');
+      expect(markdownContent).toContain('<md_last-modified>');
     }
     
     if (actualMetadataPath) {

@@ -32,6 +32,7 @@ Site Snacker is a TypeScript-based tool that converts HTML websites into clean, 
   - Preserve breadcrumbs and source information
   - Use standardized tag naming convention with `md_` prefix
   - Include source references in custom tags for media content
+  - Extract and preserve last modification date from HTML content
 
 ### 3. Content Processor Module
 - **Purpose**: Process images and audio in the markdown content

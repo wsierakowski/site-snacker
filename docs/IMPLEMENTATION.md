@@ -18,6 +18,7 @@
 - Standardized tag naming convention with `md_` prefix
 - HTML source URL preservation in markdown output
 - HTML title preservation in markdown output
+- Last modification date extraction and preservation in markdown output
 
 ### Processor Module
 - OpenAI Vision API for image descriptions
@@ -139,6 +140,10 @@ Site Snacker uses custom tags with source references to clearly associate descri
 [Audio link text](https://example.com/audio.mp3)
 
 <md_audio-transcript src="https://example.com/audio.mp3">AI-generated transcription of the audio</md_audio-transcript>
+
+<md_html-source>https://example.com/page.html</md_html-source>
+<md_html-title>Example Page Title</md_html-title>
+<md_last-modified>2023-06-15</md_last-modified>
 ```
 
 This approach ensures that each description or transcription is explicitly linked to its source media file, making it easier to understand which description corresponds to which image or audio file, especially in complex documents with multiple media elements.

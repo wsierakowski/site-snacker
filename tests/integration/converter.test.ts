@@ -45,6 +45,11 @@ describe('Converter Module', () => {
     expect(markdown).toBeDefined();
     expect(markdown.length).toBeGreaterThan(0);
     
+    // Verify that the markdown contains the expected tags
+    expect(markdown).toContain('<md_html-source>');
+    expect(markdown).toContain('<md_html-title>');
+    expect(markdown).toContain('<md_last-modified>');
+    
     // Save Markdown to file
     const markdownPath = saveMarkdown(markdown, testUrl);
     
@@ -63,5 +68,75 @@ describe('Converter Module', () => {
     
     // Verify content is the same
     expect(markdown).toBe(cachedMarkdown);
+  });
+  
+  test('should extract last modification date from HTML attributes', async () => {
+    // Create HTML with data-timemodified attribute
+    const htmlWithTimeModified = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Test Page</title>
+        </head>
+        <body>
+          <div data-timemodified="2023-06-15">Content with time modified</div>
+          <h1>Test Page</h1>
+          <p>This is a test page.</p>
+        </body>
+      </html>
+    `;
+    
+    // Convert HTML to Markdown
+    const markdown = await htmlToMarkdown(htmlWithTimeModified, 'https://example.com');
+    
+    // Verify that the markdown contains the last modification date
+    expect(markdown).toContain('<md_last-modified>');
+    expect(markdown).toContain('2023-06-15');
+    
+    // Create HTML with data-publicationdate attribute
+    const htmlWithPublicationDate = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Test Page</title>
+        </head>
+        <body>
+          <div data-publicationdate="2023-07-20">Content with publication date</div>
+          <h1>Test Page</h1>
+          <p>This is a test page.</p>
+        </body>
+      </html>
+    `;
+    
+    // Convert HTML to Markdown
+    const markdownWithPublicationDate = await htmlToMarkdown(htmlWithPublicationDate, 'https://example.com');
+    
+    // Verify that the markdown contains the publication date
+    expect(markdownWithPublicationDate).toContain('<md_last-modified>');
+    expect(markdownWithPublicationDate).toContain('2023-07-20');
+    
+    // Create HTML without any date attributes
+    const htmlWithoutDate = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Test Page</title>
+        </head>
+        <body>
+          <h1>Test Page</h1>
+          <p>This is a test page.</p>
+        </body>
+      </html>
+    `;
+    
+    // Convert HTML to Markdown
+    const markdownWithoutDate = await htmlToMarkdown(htmlWithoutDate, 'https://example.com');
+    
+    // Verify that the markdown contains a last modification date (current date)
+    expect(markdownWithoutDate).toContain('<md_last-modified>');
+    
+    // Get current date in YYYY-MM-DD format
+    const today = new Date().toISOString().split('T')[0];
+    expect(markdownWithoutDate).toContain(today);
   });
 }); 

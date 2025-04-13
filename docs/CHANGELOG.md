@@ -45,6 +45,11 @@ This document tracks the progress of the Site Snacker project compared to the or
   - Added a complete YAML configuration example
   - Added a configuration usage section
   - Updated the directory structure to match the actual implementation
+- Added FEATURE_LAST-MODIFIED-SUPPORT.md with ideas for implementing last-modified date support:
+  - Proposed URL registry for tracking processed URLs and their dates
+  - Suggested incremental processing logic for sitemaps
+  - Outlined benefits and implementation considerations
+  - Provided example workflow and configuration options
 
 ### Configuration System
 - Created centralized configuration file `site-snacker.config.yml`
@@ -90,12 +95,13 @@ This document tracks the progress of the Site Snacker project compared to the or
 ### Content Processor Module
 - Implemented image processing with OpenAI Vision API
 - Added audio transcription with OpenAI Whisper API
-- Implemented cost tracking for API usage
-- Added MediaRegistry for tracking and deduplicating media files
+- Added cost tracking for API usage
+- Created MediaRegistry for tracking and deduplicating media files
 - Enhanced custom tags with source references:
-  - Added src attribute to md_image-description tags
-  - Added src attribute to md_audio-transcript tags
-  - Updated documentation to reflect these changes
+  - Added `src` attribute to `md_image-description` tag
+  - Added `src` attribute to `md_audio-transcript` tag
+  - Added `md_last-modified` tag with date in YYYY-MM-DD format
+- Updated documentation to reflect these changes
 - Implemented content-based hashing for efficient caching
 - Added automatic backup of registry files
 - Implemented cross-page media reuse to minimize API costs

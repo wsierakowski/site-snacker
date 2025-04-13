@@ -244,6 +244,7 @@ Site Snacker uses a standardized tag naming convention with the `md_` prefix for
 - `<md_audio-transcript src="audio-url">` - Contains AI-generated transcriptions of audio content, with the src attribute pointing to the original audio URL
 - `<md_html-source>` - Contains the URL to the original HTML page
 - `<md_html-title>` - Contains the title of the original HTML page
+- `<md_last-modified>` - Contains the last modification date of the original HTML page in YYYY-MM-DD format
 
 These tags are preserved in the merged output and can be used for post-processing or integration with other tools.
 
