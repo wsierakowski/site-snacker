@@ -358,6 +358,10 @@ This document tracks the progress of the Site Snacker project compared to the or
 - Environment variables support for sensitive settings
 - Added error reporting for failed URLs in sitemap processing
 - Added HTML source tag to markdown output
+- scripts/convert-url.ts now supports local HTML files as input, not just remote URLs. The script will detect if the input is a local HTML file (ending in .html or .htm) and process it directly, converting it to Markdown and generating metadata as with remote URLs.
+- Added support for processing local HTML files alongside remote URLs and sitemaps
+- Updated README.md to include documentation about local HTML file processing
+- Made file processing behavior consistent across all input types (local, remote, sitemap)
 
 ### Removed
 - Removed redundant test-fetcher.ts file
@@ -393,6 +397,10 @@ This document tracks the progress of the Site Snacker project compared to the or
 - Fixed image filename handling in processor
 - Fixed audio filename handling in processor
 - Updated documentation with sitemap usage examples
+- The snack/orchestration flow now supports local HTML files as input, not just remote URLs or sitemaps. The orchestrator will detect if the input is a local HTML file (ending in .html or .htm) and process it directly, converting it to Markdown and running the full pipeline.
+- Image processing now logs a warning and skips missing local image files (ENOENT) instead of throwing an error or stopping the script. The main Markdown output is always produced even if some images are missing.
+- Output for local HTML files is now saved under the output directory, mirroring the input path (e.g., input/rest_rules.html -> output/input/rest_rules.md), for consistency with remote and sitemap scenarios.
+- Only the final, processed Markdown is now saved in the output directory (with .md extension), and the initial Markdown is saved only in the tmp directory. This applies to all input types (local, remote, sitemap).
 
 ### Fixed
 - Image description preservation in merged output
@@ -419,3 +427,8 @@ This document tracks the progress of the Site Snacker project compared to the or
 - Sitemap processing
 - Cloudflare protection handling
 - Caching system for downloaded content
+
+## [0.1.1] - 2023-01-02
+
+### Changed
+- The README now documents support for processing local HTML files, including example commands and output location details.

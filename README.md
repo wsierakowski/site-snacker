@@ -141,6 +141,9 @@ bun run snack https://example.com/sitemap.xml
 # Process a local sitemap file
 bun run snack ./local-sitemap.xml
 
+# Process a local HTML file
+bun run snack ./path/to/local/file.html
+
 # You can still force Puppeteer mode if needed
 bun run snack https://example.com --puppeteer
 ```

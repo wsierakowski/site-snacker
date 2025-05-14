@@ -55,6 +55,11 @@ export async function orchestrate(
   console.log('Options:', options);
 
   try {
+    // Check if the input is a local HTML file
+    if (fs.existsSync(url) && (url.endsWith('.html') || url.endsWith('.htm'))) {
+      // Process local HTML file directly
+      return await processLocalHtmlFile(url);
+    }
     // Check if the input is a sitemap
     if (isSitemapSource(url)) {
       console.log('\n=== Processing Sitemap ===');
@@ -188,7 +193,6 @@ async function processUrl(
         useCloudflareHeaders: fetcherConfig.cloudflare.auto_detect
       });
     } catch (error: any) {
-      // Check if the error message suggests Cloudflare protection
       if (
         error.message.includes('Cloudflare') ||
         error.message.includes('challenge') ||
@@ -201,7 +205,6 @@ async function processUrl(
           timeout: options.timeout || fetcherConfig.cloudflare.timeout
         });
       } else {
-        // If it's not a Cloudflare issue, rethrow the error
         throw error;
       }
     }
@@ -209,22 +212,26 @@ async function processUrl(
 
   // Get file paths
   const htmlPath = urlToFilePath(url);
-  const markdownPath = htmlPath.replace(/\.html$/, '.md');
-  const processedPath = path.join(
+  const tmpMarkdownPath = htmlPath.replace(/\.html$/, '.md');
+  const outputMarkdownPath = path.join(
     dirConfig.output.base,
     dirConfig.output.processed,
-    path.basename(path.dirname(markdownPath)),
-    path.basename(markdownPath)
+    path.basename(path.dirname(tmpMarkdownPath)),
+    path.basename(tmpMarkdownPath)
   );
 
   // Ensure directories exist
   const htmlDir = path.dirname(htmlPath);
-  const processedDir = path.dirname(processedPath);
+  const tmpDir = path.dirname(tmpMarkdownPath);
+  const outputDir = path.dirname(outputMarkdownPath);
   if (!fs.existsSync(htmlDir)) {
     fs.mkdirSync(htmlDir, { recursive: true });
   }
-  if (!fs.existsSync(processedDir)) {
-    fs.mkdirSync(processedDir, { recursive: true });
+  if (!fs.existsSync(tmpDir)) {
+    fs.mkdirSync(tmpDir, { recursive: true });
+  }
+  if (!fs.existsSync(outputDir)) {
+    fs.mkdirSync(outputDir, { recursive: true });
   }
 
   // Save HTML content
@@ -234,31 +241,78 @@ async function processUrl(
   console.log('\n=== Step 2: Converting to Markdown ===');
   const markdown = await htmlToMarkdown(html, url);
 
-  // Save Markdown content
-  fs.writeFileSync(markdownPath, markdown);
+  // Save Markdown content to tmp only
+  fs.writeFileSync(tmpMarkdownPath, markdown);
 
   // Step 3: Process Markdown
   console.log('\n=== Step 3: Processing Markdown ===');
   const { content: processedMarkdown, costSummary } = await processMarkdownContent(
     markdown,
     url.replace(/\.html$/, ''),
-    processedDir,
-    markdownPath
+    outputDir,
+    tmpMarkdownPath
   );
 
-  // Save processed markdown without adding the redundant source URL line
-  fs.writeFileSync(processedPath, processedMarkdown);
+  // Save processed markdown to output only (with .md extension)
+  fs.writeFileSync(outputMarkdownPath, processedMarkdown);
 
   console.log('\n=== Processing Complete ===');
   console.log('HTML cached at:', htmlPath);
-  console.log('Markdown saved at:', markdownPath);
-  console.log('Processed markdown saved at:', processedPath);
+  console.log('Markdown saved at (tmp):', tmpMarkdownPath);
+  console.log('Processed markdown saved at:', outputMarkdownPath);
 
   return {
     htmlPath,
-    markdownPath,
-    processedPath,
+    markdownPath: tmpMarkdownPath,
+    processedPath: outputMarkdownPath,
     costSummary,
     url
+  };
+}
+
+/**
+ * Process a local HTML file through the pipeline
+ */
+async function processLocalHtmlFile(localPath: string): Promise<OrchestrationResult> {
+  console.log('\n=== Step 1: Reading Local HTML File ===');
+  const html = fs.readFileSync(localPath, 'utf-8');
+
+  // Mirror the input path under the output directory
+  const relativePath = path.relative(process.cwd(), localPath);
+  const tmpBasePath = path.join('tmp', relativePath.replace(/\.html?$/, ''));
+  const outputBasePath = path.join(dirConfig.output.base, relativePath.replace(/\.html?$/, ''));
+  const tmpMarkdownPath = tmpBasePath + '.md';
+  const outputMarkdownPath = outputBasePath + '.md';
+
+  // Ensure output directories exist
+  fs.mkdirSync(path.dirname(tmpMarkdownPath), { recursive: true });
+  fs.mkdirSync(path.dirname(outputMarkdownPath), { recursive: true });
+
+  // Step 2: Convert to Markdown
+  console.log('\n=== Step 2: Converting to Markdown ===');
+  const markdown = await htmlToMarkdown(html, `file://${path.resolve(localPath)}`);
+  fs.writeFileSync(tmpMarkdownPath, markdown);
+
+  // Step 3: Process Markdown
+  console.log('\n=== Step 3: Processing Markdown ===');
+  const { content: processedMarkdown, costSummary } = await processMarkdownContent(
+    markdown,
+    `file://${path.resolve(localPath)}`,
+    path.dirname(outputMarkdownPath),
+    tmpMarkdownPath
+  );
+  fs.writeFileSync(outputMarkdownPath, processedMarkdown);
+
+  console.log('\n=== Processing Complete ===');
+  console.log('HTML read from:', localPath);
+  console.log('Markdown saved at (tmp):', tmpMarkdownPath);
+  console.log('Processed markdown saved at:', outputMarkdownPath);
+
+  return {
+    htmlPath: localPath,
+    markdownPath: tmpMarkdownPath,
+    processedPath: outputMarkdownPath,
+    costSummary,
+    url: `file://${path.resolve(localPath)}`
   };
 } 

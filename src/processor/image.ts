@@ -212,7 +212,16 @@ export async function processImages(
       if (resolvedImageUrl.startsWith('file://')) {
         // For local files, read directly from the filesystem
         const localPath = resolvedImageUrl.replace('file://', '');
-        imageBuffer = fs.readFileSync(localPath);
+        try {
+          imageBuffer = fs.readFileSync(localPath);
+        } catch (readErr: any) {
+          if (readErr.code === 'ENOENT') {
+            console.warn(`Warning: image not found at ${localPath} (skipping)`);
+            continue;
+          } else {
+            throw readErr;
+          }
+        }
         contentType = 'image/png'; // Default for local files
       } else {
         // For remote files, download using the utility
